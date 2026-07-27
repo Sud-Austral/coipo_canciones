@@ -1,0 +1,1047 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cortafuego — sincronizador de karaoke</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --noche:#0B1614;
+  --musgo:#122522;
+  --musgo-alto:#1A332E;
+  --ceniza:#2E403B;
+  --niebla:#93AEA6;
+  --escarcha:#EAF3EF;
+  --brasa:#FF6A28;
+  --brasa-alta:#FFA23D;
+  --sol:#FFD166;
+  --agua:#4FB3A0;
+  --display:"Archivo Black","Arial Black",system-ui,sans-serif;
+  --body:"Archivo","Helvetica Neue",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #17302B 0%, transparent 60%),
+    var(--noche);
+  color:var(--escarcha);
+  font-family:var(--body);
+  font-size:15px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--sol);outline-offset:2px;border-radius:2px}
+
+/* ---------- estructura ---------- */
+.wrap{max-width:1140px;margin:0 auto;padding:0 18px 64px}
+
+header.top{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:18px 0 14px;border-bottom:1px solid var(--ceniza);
+}
+.brand{display:flex;flex-direction:column;gap:2px;margin-right:auto}
+.brand .eyebrow{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--agua);
+}
+.brand h1{font-family:var(--display);font-size:19px;letter-spacing:-.01em;line-height:1.1}
+.brand .sub{font-size:12px;color:var(--niebla)}
+
+.filebtn{
+  display:inline-flex;align-items:center;gap:9px;
+  border:1px solid var(--ceniza);background:var(--musgo);
+  padding:9px 14px;border-radius:3px;font-weight:600;font-size:13px;
+  transition:border-color .15s,background .15s;
+}
+.filebtn:hover{border-color:var(--agua);background:var(--musgo-alto)}
+.filebtn .dot{width:7px;height:7px;border-radius:50%;background:var(--brasa);flex:none}
+.filebtn.ok .dot{background:var(--agua)}
+.filename{font-family:var(--mono);font-size:11.5px;color:var(--niebla);max-width:230px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status{flex-basis:100%;font-family:var(--mono);font-size:11.5px;color:var(--agua);min-height:15px}
+.status.err{color:var(--brasa-alta)}
+
+/* ---------- pestañas ---------- */
+nav.modes{display:flex;gap:2px;margin:16px 0 14px;border-bottom:1px solid var(--ceniza)}
+nav.modes button{
+  padding:9px 16px;font-size:13px;font-weight:600;color:var(--niebla);
+  border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:.01em;
+}
+nav.modes button[aria-selected="true"]{color:var(--escarcha);border-bottom-color:var(--brasa)}
+nav.modes button:hover{color:var(--escarcha)}
+nav.modes .count{font-family:var(--mono);font-size:11px;color:var(--agua);margin-left:7px}
+
+/* ---------- cortafuego (waveform) ---------- */
+.cortafuego{position:relative;margin-top:4px;border:1px solid var(--ceniza);
+  border-radius:3px;background:var(--musgo);overflow:hidden}
+.cortafuego canvas{display:block;width:100%;height:130px;cursor:crosshair}
+.cf-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;text-align:center;padding:16px;background:var(--musgo)}
+.cf-empty p{font-size:13px;color:var(--niebla);max-width:380px}
+.cf-empty strong{color:var(--escarcha);font-weight:600}
+.cf-label{position:absolute;left:10px;top:8px;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--ceniza);pointer-events:none}
+.cf-time{position:absolute;right:10px;top:8px;font-family:var(--mono);font-size:12px;
+  color:var(--niebla);pointer-events:none}
+.cf-time b{color:var(--brasa-alta);font-weight:700}
+
+/* ---------- transporte ---------- */
+.transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.tbtn{border:1px solid var(--ceniza);background:var(--musgo);border-radius:3px;
+  padding:8px 12px;font-size:12.5px;font-weight:600;transition:border-color .15s,color .15s}
+.tbtn:hover{border-color:var(--agua)}
+.tbtn:disabled{opacity:.35;cursor:not-allowed}
+.tbtn.warn:hover{border-color:var(--brasa);color:var(--brasa-alta)}
+.tbtn.play{min-width:96px;border-color:var(--brasa);color:var(--brasa-alta)}
+.tbtn.play:hover{background:rgba(255,106,40,.1)}
+.speed{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:12px;color:var(--niebla)}
+.speed input{width:120px;accent-color:var(--brasa)}
+.speed b{font-family:var(--mono);color:var(--escarcha);font-weight:700;min-width:34px;display:inline-block}
+
+/* ---------- escenario de sincronización ---------- */
+.stage{margin-top:18px;border:1px solid var(--ceniza);border-radius:3px;
+  background:linear-gradient(180deg,var(--musgo) 0%,var(--noche) 100%);
+  padding:26px 22px;text-align:center;min-height:230px;
+  display:flex;flex-direction:column;justify-content:center;gap:12px}
+.ghost{font-size:15px;color:var(--ceniza);min-height:21px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.now-section{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--agua)}
+.now-line{font-family:var(--display);font-size:clamp(21px,3.4vw,34px);line-height:1.2;
+  letter-spacing:-.01em;text-wrap:balance}
+.now-line.respuesta{font-family:var(--body);font-weight:600;color:var(--agua);
+  font-size:clamp(18px,2.6vw,26px)}
+.now-idx{font-family:var(--mono);font-size:11px;color:var(--ceniza)}
+.markbtn{
+  margin:8px auto 0;display:block;width:min(420px,100%);
+  background:var(--brasa);color:#1A0A03;font-family:var(--display);
+  font-size:17px;letter-spacing:.02em;padding:16px 20px;border-radius:3px;
+  box-shadow:0 0 0 0 rgba(255,106,40,.5);transition:transform .06s,box-shadow .2s,background .2s;
+}
+.markbtn:hover{background:var(--brasa-alta)}
+.markbtn:active{transform:translateY(1px)}
+.markbtn:disabled{background:var(--ceniza);color:var(--niebla);cursor:not-allowed;box-shadow:none}
+.markbtn .hint{display:block;font-family:var(--mono);font-size:10px;font-weight:400;
+  letter-spacing:.14em;opacity:.65;margin-top:4px}
+.pulse{animation:pulse .35s ease-out}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,106,40,.55)}100%{box-shadow:0 0 0 22px rgba(255,106,40,0)}}
+.stage-done{font-size:14px;color:var(--agua);font-weight:600}
+
+.keys{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:14px;
+  font-size:11.5px;color:var(--niebla)}
+.keys kbd{font-family:var(--mono);font-size:10.5px;background:var(--musgo-alto);
+  border:1px solid var(--ceniza);border-bottom-width:2px;border-radius:3px;
+  padding:2px 6px;color:var(--escarcha);margin-right:5px}
+
+/* ---------- lista / edición ---------- */
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:16px 0 10px}
+.toolbar .grow{margin-left:auto}
+.rows{border:1px solid var(--ceniza);border-radius:3px;overflow:hidden}
+.sechead{
+  display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--musgo-alto);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--agua);border-top:1px solid var(--ceniza);
+}
+.sechead:first-child{border-top:none}
+.sechead .sechint{letter-spacing:.02em;text-transform:none;color:var(--ceniza);font-size:11px}
+.row{display:grid;grid-template-columns:38px 92px 1fr auto;align-items:center;gap:12px;
+  padding:7px 14px;border-top:1px solid rgba(46,64,59,.55);font-size:14px}
+.row:hover{background:rgba(26,51,46,.5)}
+.row.is-cursor{background:rgba(255,106,40,.09);box-shadow:inset 3px 0 0 var(--brasa)}
+.row .n{font-family:var(--mono);font-size:11px;color:var(--ceniza)}
+.row .t{font-family:var(--mono);font-size:13px;color:var(--agua);font-weight:700}
+.row .t.none{color:var(--ceniza);font-weight:400}
+.row .txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .txt.respuesta{color:var(--agua);font-weight:600;padding-left:16px}
+.row .acts{display:flex;gap:4px;opacity:0;transition:opacity .12s}
+.row:hover .acts,.row.is-cursor .acts{opacity:1}
+.row .acts button{font-family:var(--mono);font-size:11px;color:var(--niebla);
+  border:1px solid var(--ceniza);border-radius:3px;padding:3px 7px;background:var(--musgo)}
+.row .acts button:hover{color:var(--escarcha);border-color:var(--agua)}
+.row .acts button.warn:hover{border-color:var(--brasa);color:var(--brasa-alta)}
+
+/* ---------- karaoke ---------- */
+.kstage{margin-top:14px;border:1px solid var(--ceniza);border-radius:3px;
+  background:linear-gradient(180deg,#0E1F1C 0%,var(--noche) 70%);
+  padding:36px 24px;min-height:min(64vh,460px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  position:relative;overflow:hidden}
+.kstage .ksec{font-family:var(--mono);font-size:11px;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--agua);min-height:16px}
+.kprev,.knext{font-size:clamp(13px,1.7vw,17px);color:var(--ceniza);text-align:center;
+  min-height:22px;max-width:800px}
+.kline{position:relative;text-align:center;max-width:900px;padding:2px 0}
+.kline .base{font-family:var(--display);font-size:clamp(26px,5vw,52px);line-height:1.15;
+  color:#37514B;letter-spacing:-.015em}
+.kline .fill{position:absolute;inset:0;font-family:var(--display);
+  font-size:clamp(26px,5vw,52px);line-height:1.15;letter-spacing:-.015em;
+  color:var(--sol);text-shadow:0 0 26px rgba(255,106,40,.35);
+  clip-path:inset(0 100% 0 0)}
+.kline.respuesta .base,.kline.respuesta .fill{font-family:var(--body);font-weight:700;
+  font-size:clamp(20px,3.4vw,36px)}
+.kline.respuesta .fill{color:var(--agua);text-shadow:0 0 22px rgba(79,179,160,.35)}
+.pips{display:flex;gap:9px;min-height:12px;align-items:center}
+.pips i{width:11px;height:11px;border-radius:50%;background:var(--ceniza);display:block}
+.pips i.on{background:var(--brasa);box-shadow:0 0 14px rgba(255,106,40,.7)}
+.kbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(46,64,59,.6)}
+.kbar span{display:block;height:100%;background:linear-gradient(90deg,var(--agua),var(--sol));width:0}
+
+/* ---------- misc ---------- */
+.note{font-size:12.5px;color:var(--niebla);margin-top:12px;line-height:1.6}
+.note code{font-family:var(--mono);font-size:11.5px;color:var(--sol)}
+.hidden{display:none !important}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+  background:var(--musgo-alto);border:1px solid var(--agua);border-radius:3px;
+  padding:10px 18px;font-size:13px;font-weight:600;z-index:50;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+textarea.lrc{width:100%;height:220px;margin-top:12px;background:var(--musgo);
+  border:1px solid var(--ceniza);border-radius:3px;color:var(--escarcha);
+  font-family:var(--mono);font-size:12px;padding:12px;resize:vertical}
+
+@media (max-width:640px){
+  .row{grid-template-columns:30px 78px 1fr;gap:9px;font-size:13px}
+  .row .acts{grid-column:1/-1;opacity:1;padding-left:39px}
+  .cortafuego canvas{height:96px}
+  .stage{padding:20px 14px}
+  .speed{margin-left:0;width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important}
+}
+</style>
+
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">Sincronizador de karaoke</span>
+      <h1>El Fuego se Apaga en Invierno</h1>
+      <span class="sub">58 líneas · 9 secciones · cumbia</span>
+    </div>
+    <label class="filebtn" id="fileLabel" tabindex="0">
+      <span class="dot"></span>
+      <span id="fileBtnText">Cargar el MP3</span>
+      <input type="file" id="fileInput" accept="audio/*" class="hidden">
+    </label>
+    <span class="filename" id="fileName"></span>
+    <span class="status" id="status"></span>
+  </header>
+
+  <nav class="modes" role="tablist">
+    <button role="tab" id="tab-sync" aria-selected="true" data-mode="sync">Sincronizar<span class="count" id="cntSync">0/58</span></button>
+    <button role="tab" id="tab-edit" aria-selected="false" data-mode="edit">Ajustar</button>
+    <button role="tab" id="tab-play" aria-selected="false" data-mode="play">Karaoke</button>
+    <button role="tab" id="tab-out" aria-selected="false" data-mode="out">Exportar</button>
+  </nav>
+
+  <!-- cortafuego -->
+  <div class="cortafuego">
+    <canvas id="wave" height="130"></canvas>
+    <span class="cf-label">Cortafuego</span>
+    <span class="cf-time" id="cfTime"><b>0:00.00</b> / 0:00</span>
+    <div class="cf-empty" id="cfEmpty">
+      <p><strong>Carga el archivo El_Fuego_Se_Apaga_en_Invierno.mp3</strong> para dibujar la pista y empezar a marcar. El audio se decodifica en tu propio navegador y no se sube a ninguna parte.</p>
+      <button class="tbtn" id="cfEmptyBtn">Elegir archivo</button>
+    </div>
+  </div>
+
+  <div class="transport">
+    <button class="tbtn play" id="btnPlay" disabled>Reproducir</button>
+    <button class="tbtn" id="btnBack" disabled>&minus;3 s</button>
+    <button class="tbtn" id="btnFwd" disabled>+3 s</button>
+    <button class="tbtn" id="btnStart" disabled>Al inicio</button>
+    <button class="tbtn" id="btnHere" disabled>Ir a la línea actual</button>
+    <div class="speed">
+      Velocidad <input type="range" id="rate" min="0.5" max="1.25" step="0.05" value="1"><b id="rateVal">1.00×</b>
+    </div>
+  </div>
+
+  <!-- ========== MODO SINCRONIZAR ========== -->
+  <section id="pane-sync">
+    <div class="stage">
+      <div class="ghost" id="syncPrev"></div>
+      <div class="now-section" id="syncSection"></div>
+      <div class="now-line" id="syncNow">Carga el audio para empezar</div>
+      <div class="now-idx" id="syncIdx"></div>
+      <div class="ghost" id="syncNext"></div>
+      <button class="markbtn" id="btnMark" disabled>
+        MARCAR ESTA LÍNEA
+        <span class="hint">BARRA ESPACIADORA</span>
+      </button>
+    </div>
+    <div class="keys">
+      <span><kbd>Espacio</kbd>marcar y avanzar</span>
+      <span><kbd>P</kbd>reproducir / pausar</span>
+      <span><kbd>Z</kbd>deshacer marca</span>
+      <span><kbd>←</kbd><kbd>→</kbd>3 segundos</span>
+      <span><kbd>R</kbd>repetir desde la línea</span>
+    </div>
+    <p class="note">Reproduce y presiona <kbd style="font-family:var(--mono);font-size:11px">Espacio</kbd> justo cuando empiece cada línea. Si te adelantas o atrasas, no te detengas: después afinas todo al décimo en <strong>Ajustar</strong>. Bajar la velocidad a 0,75× ayuda en el puente y el outro.</p>
+  </section>
+
+  <!-- ========== MODO AJUSTAR ========== -->
+  <section id="pane-edit" class="hidden">
+    <div class="toolbar">
+      <button class="tbtn" id="btnShiftAll">Correr todo &minus;0,20 s</button>
+      <button class="tbtn" id="btnShiftAll2">Correr todo +0,20 s</button>
+      <button class="tbtn grow warn" id="btnClear">Borrar todas las marcas</button>
+    </div>
+    <div class="rows" id="rows"></div>
+    <p class="note">Cada fila reproduce desde un segundo antes de su marca, así escuchas la entrada real. <code>±0,1</code> corre la marca un décimo; <code>ahora</code> le asigna el tiempo en que va el audio.</p>
+  </section>
+
+  <!-- ========== MODO KARAOKE ========== -->
+  <section id="pane-play" class="hidden">
+    <div class="kstage">
+      <div class="ksec" id="kSec"></div>
+      <div class="kprev" id="kPrev"></div>
+      <div class="kline" id="kLine">
+        <div class="base" id="kBase">Marca al menos una línea</div>
+        <div class="fill" id="kFill" aria-hidden="true">Marca al menos una línea</div>
+      </div>
+      <div class="knext" id="kNext"></div>
+      <div class="pips" id="kPips"><i></i><i></i><i></i></div>
+      <div class="kbar"><span id="kBar"></span></div>
+    </div>
+    <div class="toolbar">
+      <button class="tbtn" id="btnFull">Pantalla completa</button>
+      <span class="note" style="margin:0">Proyecta esta pestaña y usa <kbd style="font-family:var(--mono);font-size:11px">P</kbd> para partir. Las respuestas del coro salen en verde.</span>
+    </div>
+  </section>
+
+  <!-- ========== EXPORTAR ========== -->
+  <section id="pane-out" class="hidden">
+    <div class="toolbar">
+      <button class="tbtn" id="btnLrc">Descargar .lrc</button>
+      <button class="tbtn" id="btnJson">Descargar proyecto .json</button>
+      <button class="tbtn" id="btnCopy">Copiar la letra sincronizada</button>
+      <label class="tbtn" tabindex="0">Abrir proyecto .json
+        <input type="file" id="jsonInput" accept=".json,application/json" class="hidden">
+      </label>
+    </div>
+    <textarea class="lrc" id="lrcOut" readonly spellcheck="false"></textarea>
+    <p class="note">El archivo <code>.lrc</code> es el formato estándar de karaoke: funciona en VLC, foobar2000, Winamp y la mayoría de los reproductores; déjalo con el mismo nombre que el MP3 y en la misma carpeta. El <code>.json</code> guarda el proyecto completo para seguir editando aquí más adelante.</p>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ============ LETRA ============ */
+const SECTIONS = [
+  {name:"Intro", hint:"gritado", lines:[
+    ["¡Brigada presente!","grito"],
+    ["¡Que suene la cumbia, mi gente!","grito"],
+    ["¡Uno, dos, tres... prevención!","grito"]]},
+  {name:"Verso 1", hint:"", lines:[
+    ["Mientras todos van durmiendo","main"],
+    ["bajo lluvia y bajo el frío,","main"],
+    ["hay un equipo trabajando","main"],
+    ["con coraje y con estilo.","main"],
+    ["Cortafuegos en el cerro,","main"],
+    ["motosierra y azadón,","main"],
+    ["que el verano no nos pille","main"],
+    ["sin hacer la pega hoy.","main"]]},
+  {name:"Coro", hint:"", lines:[
+    ["¡El fuego se apaga en invierno!","main"],
+    ["(¡en invierno!)","respuesta"],
+    ["¡La temporada se gana hoy!","main"],
+    ["(¡se gana hoy!)","respuesta"],
+    ["Con la pala y con el mapa,","main"],
+    ["con la brigada y el corazón,","main"],
+    ["¡el fuego se apaga en invierno,","main"],
+    ["eso es prevención!","main"]]},
+  {name:"Verso 2", hint:"", lines:[
+    ["Hay quien lidera con visión","main"],
+    ["y marca bien la dirección,","main"],
+    ["hay quien conduce la faena","main"],
+    ["y le pone el corazón.","main"],
+    ["Y los viejos con su historia,","main"],
+    ["mil incendios que vivieron,","main"],
+    ["les enseñan a los nuevos","main"],
+    ["los secretos que aprendieron.","main"]]},
+  {name:"Coro", hint:"", lines:[
+    ["¡El fuego se apaga en invierno!","main"],
+    ["(¡en invierno!)","respuesta"],
+    ["¡La temporada se gana hoy!","main"],
+    ["(¡se gana hoy!)","respuesta"],
+    ["Con la pala y con el mapa,","main"],
+    ["con la brigada y el corazón,","main"],
+    ["¡el fuego se apaga en invierno,","main"],
+    ["eso es prevención!","main"]]},
+  {name:"Puente", hint:"medio tiempo, palmas", lines:[
+    ["Quema controlada, con ciencia y con razón,","main"],
+    ["brigada entrenada, lista pa' la acción.","main"],
+    ["Torres vigilando, cámaras y avión,","main"],
+    ["y el vecino preparado... ¡esa es la primera línea de acción!","main"]]},
+  {name:"Verso 3", hint:"", lines:[
+    ["Los incendios que no ocurren","main"],
+    ["no salen en televisión,","main"],
+    ["pero son nuestra victoria,","main"],
+    ["la más grande, sí señor.","main"],
+    ["Brigadista, analista,","main"],
+    ["torrero y conductor,","main"],
+    ["¡todos juntos somos uno,","main"],
+    ["somos fuego de pasión!","main"]]},
+  {name:"Coro final", hint:"subiendo tono", lines:[
+    ["¡El fuego se apaga en invierno!","main"],
+    ["(¡en invierno!)","respuesta"],
+    ["¡La temporada se gana hoy!","main"],
+    ["(¡se gana hoy!)","respuesta"],
+    ["Con la pala y con el mapa,","main"],
+    ["con la brigada y el corazón,","main"],
+    ["¡el fuego se apaga en invierno...","main"]]},
+  {name:"Outro", hint:"gritado con trompetas", lines:[
+    ["¡Por los que previenen!","grito"],
+    ["¡Por toda la tropa del bosque!","grito"],
+    ["¡Apagando el próximo verano!","grito"],
+    ["¡EEEEEso! ¡Prevención!","grito"]]}
+];
+
+const LINES = [];
+SECTIONS.forEach((s, si) => s.lines.forEach((l, li) => {
+  LINES.push({ i: LINES.length, text: l[0], kind: l[1], sec: s.name,
+               secHint: s.hint, secIdx: si, first: li === 0 });
+}));
+const N = LINES.length;
+
+/* ============ ESTADO ============ */
+let marks = new Array(N).fill(null);
+let cursor = 0;
+let mode = "sync";
+let peaks = null;
+let dragging = -1;
+let hoverMark = -1;
+let needsDraw = true;
+
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function fmt(t){
+  if (t == null || !isFinite(t)) return "0:00.00";
+  const m = Math.floor(t / 60), s = Math.floor(t % 60), c = Math.floor((t % 1) * 100);
+  return m + ":" + String(s).padStart(2,"0") + "." + String(c).padStart(2,"0");
+}
+function fmtShort(t){
+  if (!isFinite(t) || !t) return "0:00";
+  return Math.floor(t/60) + ":" + String(Math.floor(t%60)).padStart(2,"0");
+}
+let toastTimer;
+function toast(msg){
+  const el = $("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 1700);
+}
+function setStatus(msg, isErr){
+  const s = $("status");
+  s.textContent = msg;
+  s.classList.toggle("err", !!isErr);
+}
+function marked(){ return marks.filter(m => m !== null).length; }
+function endOf(i){
+  for (let j = i + 1; j < N; j++) if (marks[j] !== null) return marks[j];
+  return (marks[i] ?? 0) + 4;
+}
+
+/* ============================================================
+   MOTOR DE AUDIO
+   Principal: Web Audio API — decodifica el MP3 a memoria y lo
+   reproduce desde el búfer, sin URL de por medio. Así funciona
+   aunque el visor bloquee las URLs blob: de los medios.
+   Respaldo: elemento <audio> tradicional.
+   ============================================================ */
+const Engine = {
+  kind: null, ready: false, duration: 0,
+  ctx: null, buffer: null, node: null,
+  startedAt: 0, offset: 0, playing: false, rate: 1,
+  el: null,
+
+  time(){
+    if (this.kind === "element") return this.el ? this.el.currentTime : 0;
+    if (!this.playing) return this.offset;
+    return Math.min(this.duration, this.offset + (this.ctx.currentTime - this.startedAt) * this.rate);
+  },
+  isPlaying(){
+    if (this.kind === "element") return !!this.el && !this.el.paused;
+    return this.playing;
+  },
+  play(){
+    if (!this.ready) return;
+    if (this.kind === "element"){
+      this.el.play().catch(e => setStatus("El navegador bloqueó la reproducción: " + e.message, true));
+      return;
+    }
+    if (this.playing) return;
+    if (this.offset >= this.duration - 0.03) this.offset = 0;
+    if (this.ctx.state === "suspended") this.ctx.resume();
+    const n = this.ctx.createBufferSource();
+    n.buffer = this.buffer;
+    n.playbackRate.value = this.rate;
+    n.connect(this.ctx.destination);
+    n.onended = () => {
+      if (n._manual) return;
+      this.playing = false;
+      this.offset = this.duration;
+      this.node = null;
+      needsDraw = true;
+    };
+    this.startedAt = this.ctx.currentTime;
+    n.start(0, clamp(this.offset, 0, Math.max(0, this.duration - 0.02)));
+    this.node = n;
+    this.playing = true;
+  },
+  pause(){
+    if (this.kind === "element"){ if (this.el) this.el.pause(); return; }
+    if (!this.playing) return;
+    this.offset = this.time();
+    if (this.node){
+      this.node._manual = true;
+      try { this.node.stop(); } catch(e){}
+      this.node.disconnect();
+      this.node = null;
+    }
+    this.playing = false;
+    needsDraw = true;
+  },
+  toggle(){ this.isPlaying() ? this.pause() : this.play(); },
+  seek(t){
+    if (!this.ready) return;
+    t = clamp(t, 0, Math.max(0, this.duration - 0.02));
+    if (this.kind === "element"){ if (this.el) this.el.currentTime = t; needsDraw = true; return; }
+    const was = this.playing;
+    if (was) this.pause();
+    this.offset = t;
+    if (was) this.play();
+    needsDraw = true;
+  },
+  nudge(d){ this.seek(this.time() + d); },
+  setRate(r){
+    this.rate = r;
+    if (this.kind === "element"){ if (this.el) this.el.playbackRate = r; return; }
+    if (this.playing){ const t = this.time(); this.pause(); this.offset = t; this.play(); }
+  }
+};
+
+/* ============ CARGA DEL ARCHIVO ============ */
+$("fileInput").addEventListener("change", e => {
+  const f = e.target.files[0];
+  if (f) loadAudio(f);
+});
+$("cfEmptyBtn").addEventListener("click", () => $("fileInput").click());
+$("fileLabel").addEventListener("keydown", e => {
+  if (e.key === "Enter" || e.key === " "){ e.preventDefault(); $("fileInput").click(); }
+});
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", e => {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if (f) loadAudio(f);
+});
+
+async function loadAudio(file){
+  $("fileName").textContent = file.name;
+  $("fileBtnText").textContent = "Cambiar archivo";
+  $("fileLabel").classList.add("ok");
+  setStatus("Leyendo el archivo…");
+
+  let bytes;
+  try { bytes = await file.arrayBuffer(); }
+  catch (e){ return setStatus("No se pudo leer el archivo: " + e.message, true); }
+
+  setStatus("Decodificando el audio… (unos segundos)");
+
+  // --- Principal: Web Audio ---
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) throw new Error("este navegador no tiene AudioContext");
+    const ctx = new AC();
+    const buf = await new Promise((resolve, reject) => {
+      const copy = bytes.slice(0);            // decodeAudioData consume el búfer
+      const p = ctx.decodeAudioData(copy, resolve, reject);
+      if (p && p.then) p.then(resolve, reject);
+    });
+    Engine.kind = "webaudio";
+    Engine.ctx = ctx;
+    Engine.buffer = buf;
+    Engine.duration = buf.duration;
+    Engine.offset = 0;
+    Engine.ready = true;
+    peaks = computePeaks(buf, 1400);
+    enableUI();
+    setStatus("Listo · " + fmtShort(buf.duration) + " · " + Math.round(buf.sampleRate/1000) + " kHz · reproducción en memoria");
+    return;
+  } catch (err){
+    console.warn("Web Audio no disponible:", err);
+  }
+
+  // --- Respaldo: elemento <audio> ---
+  try {
+    const el = new Audio();
+    el.preload = "auto";
+    el.src = URL.createObjectURL(new Blob([bytes], { type: file.type || "audio/mpeg" }));
+    Engine.kind = "element";
+    Engine.el = el;
+    Engine.ready = true;
+    el.addEventListener("loadedmetadata", () => {
+      Engine.duration = el.duration;
+      needsDraw = true; renderSync();
+      setStatus("Listo · " + fmtShort(el.duration) + " · modo respaldo (sin onda)");
+    });
+    el.addEventListener("error", () => setStatus(
+      "Este visor bloqueó el audio. Descarga el archivo HTML y ábrelo directo en tu navegador.", true));
+    enableUI();
+    setStatus("Modo respaldo: preparando…");
+  } catch (err){
+    setStatus("No se pudo preparar el audio: " + err.message +
+      " — prueba descargando el HTML y abriéndolo en tu navegador.", true);
+  }
+}
+
+function enableUI(){
+  ["btnPlay","btnBack","btnFwd","btnStart","btnHere","btnMark"].forEach(id => $(id).disabled = false);
+  $("cfEmpty").classList.add("hidden");
+  needsDraw = true;
+  renderSync();
+}
+
+function computePeaks(buf, buckets){
+  const ch = buf.getChannelData(0);
+  const step = Math.max(1, Math.floor(ch.length / buckets));
+  const out = new Float32Array(buckets);
+  let max = 0;
+  for (let b = 0; b < buckets; b++){
+    let peak = 0;
+    const s = b * step, e = Math.min(s + step, ch.length);
+    for (let i = s; i < e; i += 3){
+      const v = Math.abs(ch[i]);
+      if (v > peak) peak = v;
+    }
+    out[b] = peak;
+    if (peak > max) max = peak;
+  }
+  if (max > 0) for (let b = 0; b < buckets; b++) out[b] = Math.pow(out[b] / max, 0.72);
+  return out;
+}
+
+/* ============ CORTAFUEGO / ONDA ============ */
+const cv = $("wave"), cx = cv.getContext("2d");
+let W = 0, H = 0;
+
+function sizeCanvas(){
+  const r = cv.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  W = r.width; H = r.height;
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(H * dpr);
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  needsDraw = true;
+  drawWave();
+}
+window.addEventListener("resize", sizeCanvas);
+
+function ridgePath(){
+  cx.beginPath();
+  cx.moveTo(0, H);
+  if (peaks){
+    const n = peaks.length;
+    for (let x = 0; x <= W; x++){
+      const p = peaks[Math.min(n - 1, Math.floor(x / W * n))];
+      cx.lineTo(x, H - 6 - p * (H - 16));
+    }
+  } else {
+    cx.lineTo(W, H - 10);
+  }
+  cx.lineTo(W, H);
+  cx.closePath();
+}
+
+function drawWave(){
+  if (!W) return;
+  const D = Engine.duration;
+  cx.clearRect(0, 0, W, H);
+  cx.fillStyle = "#122522";
+  cx.fillRect(0, 0, W, H);
+
+  const px = D ? (Engine.time() / D) * W : 0;
+
+  cx.save();
+  ridgePath();
+  cx.clip();
+  const g1 = cx.createLinearGradient(0, 0, 0, H);
+  g1.addColorStop(0, "#4FB3A0"); g1.addColorStop(1, "#1E4A42");
+  cx.fillStyle = g1; cx.fillRect(0, 0, px, H);
+  const g2 = cx.createLinearGradient(0, 0, 0, H);
+  g2.addColorStop(0, "#3A4B46"); g2.addColorStop(1, "#22332F");
+  cx.fillStyle = g2; cx.fillRect(px, 0, W - px, H);
+  cx.restore();
+
+  if (!D) return;
+
+  for (let i = 0; i < N; i++){
+    if (marks[i] === null) continue;
+    const x = (marks[i] / D) * W;
+    const act = (i === cursor) || (i === hoverMark) || (i === dragging);
+    cx.fillStyle = act ? "#FFD166" : "rgba(234,243,239,.42)";
+    cx.fillRect(x - (act ? 1 : 0.5), 4, act ? 2 : 1, H - 4);
+    if (act){
+      cx.fillStyle = "#FFD166";
+      cx.fillRect(x - 1, 4, 17, 12);
+      cx.fillStyle = "#0B1614";
+      cx.font = "700 9px ui-monospace, monospace";
+      cx.fillText(String(i + 1).padStart(2,"0"), x + 2, 13);
+    }
+  }
+  cx.fillStyle = "#FF6A28";
+  cx.fillRect(px - 1, 0, 2, H);
+  cx.beginPath(); cx.moveTo(px - 5, 0); cx.lineTo(px + 5, 0); cx.lineTo(px, 8);
+  cx.closePath(); cx.fill();
+}
+
+function xToTime(clientX){
+  const r = cv.getBoundingClientRect();
+  return clamp((clientX - r.left) / r.width, 0, 1) * Engine.duration;
+}
+function markAtX(clientX){
+  if (!Engine.duration) return -1;
+  const r = cv.getBoundingClientRect();
+  const x = clientX - r.left;
+  let best = -1, bd = 7;
+  for (let i = 0; i < N; i++){
+    if (marks[i] === null) continue;
+    const d = Math.abs((marks[i] / Engine.duration) * r.width - x);
+    if (d < bd){ bd = d; best = i; }
+  }
+  return best;
+}
+cv.addEventListener("mousedown", e => {
+  if (!Engine.ready || !Engine.duration) return;
+  const m = markAtX(e.clientX);
+  if (m >= 0){ dragging = m; cv.style.cursor = "ew-resize"; }
+  else Engine.seek(xToTime(e.clientX));
+});
+cv.addEventListener("mousemove", e => {
+  if (dragging >= 0){
+    marks[dragging] = +xToTime(e.clientX).toFixed(2);
+    needsDraw = true; renderRows(); refreshOut();
+  } else {
+    const m = markAtX(e.clientX);
+    if (m !== hoverMark){
+      hoverMark = m;
+      cv.style.cursor = m >= 0 ? "ew-resize" : "crosshair";
+      needsDraw = true;
+    }
+  }
+});
+window.addEventListener("mouseup", () => {
+  if (dragging >= 0){ toast("Línea " + (dragging + 1) + " → " + fmt(marks[dragging])); dragging = -1; }
+});
+cv.addEventListener("mouseleave", () => { hoverMark = -1; needsDraw = true; });
+cv.addEventListener("touchstart", e => {
+  if (!Engine.ready || !Engine.duration) return;
+  Engine.seek(xToTime(e.touches[0].clientX));
+}, { passive: true });
+
+/* ============ TRANSPORTE ============ */
+$("btnPlay").onclick  = () => Engine.toggle();
+$("btnBack").onclick  = () => Engine.nudge(-3);
+$("btnFwd").onclick   = () => Engine.nudge(3);
+$("btnStart").onclick = () => Engine.seek(0);
+$("btnHere").onclick  = () => replayFrom(cursor);
+$("rate").oninput = e => {
+  const r = +e.target.value;
+  Engine.setRate(r);
+  $("rateVal").textContent = r.toFixed(2) + "×";
+};
+
+function replayFrom(i){
+  i = clamp(i, 0, N - 1);
+  const own = marks[i];
+  const prev = (own !== null && own !== undefined)
+      ? own
+      : (marks.slice(0, i).filter(v => v !== null).pop() ?? 0);
+  Engine.seek(Math.max(0, prev - 1.2));
+  Engine.play();
+}
+
+/* ============ MARCAR ============ */
+function markNow(){
+  if (!Engine.ready || cursor >= N) return;
+  marks[cursor] = +Engine.time().toFixed(2);
+  cursor = Math.min(N, cursor + 1);
+  const b = $("btnMark");
+  b.classList.remove("pulse"); void b.offsetWidth; b.classList.add("pulse");
+  renderSync(); renderRows(); refreshOut();
+  needsDraw = true;
+}
+function undoMark(){
+  let i = cursor - 1;
+  while (i >= 0 && marks[i] === null) i--;
+  if (i < 0){ toast("No hay marcas que deshacer"); return; }
+  marks[i] = null; cursor = i;
+  renderSync(); renderRows(); refreshOut();
+  needsDraw = true;
+  toast("Marca de la línea " + (i + 1) + " borrada");
+}
+$("btnMark").onclick = markNow;
+
+/* ============ TECLADO ============ */
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input,textarea")) return;
+  const k = e.key.toLowerCase();
+  if (e.code === "Space"){ e.preventDefault(); mode === "sync" ? markNow() : Engine.toggle(); }
+  else if (k === "p"){ e.preventDefault(); Engine.toggle(); }
+  else if (k === "z"){ e.preventDefault(); undoMark(); }
+  else if (k === "r"){ e.preventDefault(); replayFrom(cursor); }
+  else if (e.key === "ArrowLeft"){ e.preventDefault(); Engine.nudge(-3); }
+  else if (e.key === "ArrowRight"){ e.preventDefault(); Engine.nudge(3); }
+});
+
+/* ============ VISTA SINCRONIZAR ============ */
+function renderSync(){
+  $("cntSync").textContent = marked() + "/" + N;
+  const done = cursor >= N;
+  $("btnMark").disabled = done || !Engine.ready;
+  if (done){
+    $("syncSection").textContent = "";
+    $("syncNow").className = "now-line";
+    $("syncNow").innerHTML = '<span class="stage-done">Listo: las ' + N + ' líneas quedaron marcadas.</span>';
+    $("syncIdx").textContent = "Pasa a Ajustar para afinar, o a Karaoke para probarlo.";
+    $("syncPrev").textContent = LINES[N-1].text;
+    $("syncNext").textContent = "";
+    return;
+  }
+  const L = LINES[cursor];
+  $("syncSection").textContent = L.sec + (L.secHint ? " · " + L.secHint : "");
+  $("syncNow").textContent = L.text;
+  $("syncNow").className = "now-line" + (L.kind === "respuesta" ? " respuesta" : "");
+  $("syncIdx").textContent = "línea " + (cursor + 1) + " de " + N;
+  $("syncPrev").textContent = cursor > 0 ? LINES[cursor-1].text : "";
+  $("syncNext").textContent = cursor < N - 1 ? "siguiente: " + LINES[cursor+1].text : "";
+}
+
+/* ============ VISTA AJUSTAR ============ */
+function renderRows(){
+  $("cntSync").textContent = marked() + "/" + N;
+  if (mode !== "edit") return;
+  const host = $("rows");
+  host.textContent = "";
+  let lastSec = -1;
+  LINES.forEach(L => {
+    if (L.secIdx !== lastSec){
+      lastSec = L.secIdx;
+      const h = document.createElement("div");
+      h.className = "sechead";
+      h.innerHTML = L.sec + (L.secHint ? ' <span class="sechint">' + L.secHint + '</span>' : "");
+      host.appendChild(h);
+    }
+    const r = document.createElement("div");
+    r.className = "row" + (L.i === cursor ? " is-cursor" : "");
+    const t = marks[L.i];
+    r.innerHTML =
+      '<span class="n">' + String(L.i + 1).padStart(2,"0") + '</span>' +
+      '<span class="t' + (t === null ? " none" : "") + '">' + (t === null ? "sin marca" : fmt(t)) + '</span>' +
+      '<span class="txt' + (L.kind === "respuesta" ? " respuesta" : "") + '"></span>' +
+      '<span class="acts">' +
+        '<button data-a="play" title="Escuchar desde aquí">▶</button>' +
+        '<button data-a="minus">−0,1</button>' +
+        '<button data-a="plus">+0,1</button>' +
+        '<button data-a="now">ahora</button>' +
+        '<button data-a="del" class="warn" title="Quitar marca">✕</button>' +
+      '</span>';
+    r.querySelector(".txt").textContent = L.text;
+    r.querySelector(".acts").addEventListener("click", e => {
+      const a = e.target.dataset.a; if (!a) return;
+      const i = L.i;
+      if (a === "play") replayFrom(i);
+      if (a === "minus" && marks[i] !== null) marks[i] = +Math.max(0, marks[i] - 0.1).toFixed(2);
+      if (a === "plus"  && marks[i] !== null) marks[i] = +(marks[i] + 0.1).toFixed(2);
+      if (a === "now"){ marks[i] = +Engine.time().toFixed(2); cursor = Math.min(N, i + 1); }
+      if (a === "del"){ marks[i] = null; cursor = i; }
+      renderRows(); refreshOut(); renderSync();
+      needsDraw = true;
+    });
+    host.appendChild(r);
+  });
+}
+
+$("btnShiftAll").onclick  = () => shiftAll(-0.2);
+$("btnShiftAll2").onclick = () => shiftAll(0.2);
+function shiftAll(d){
+  for (let i = 0; i < N; i++) if (marks[i] !== null) marks[i] = +Math.max(0, marks[i] + d).toFixed(2);
+  renderRows(); refreshOut(); needsDraw = true;
+  toast("Todas las marcas corridas " + (d > 0 ? "+" : "−") + "0,20 s");
+}
+$("btnClear").onclick = () => {
+  if (!marked()) return toast("No hay marcas");
+  if (!confirm("Se borran las " + marked() + " marcas. ¿Seguir?")) return;
+  marks = new Array(N).fill(null); cursor = 0;
+  renderRows(); renderSync(); refreshOut(); needsDraw = true;
+};
+
+/* ============ VISTA KARAOKE ============ */
+function renderKaraoke(t){
+  let cur = -1;
+  for (let i = 0; i < N; i++) if (marks[i] !== null && marks[i] <= t) cur = i;
+
+  if (cur < 0){
+    const nextI = marks.findIndex(m => m !== null);
+    $("kSec").textContent = nextI >= 0 ? LINES[nextI].sec : "";
+    $("kPrev").textContent = "";
+    setKLine(nextI >= 0 ? LINES[nextI] : { text:"Marca al menos una línea", kind:"main" }, 0);
+    $("kNext").textContent = "";
+    setPips(nextI >= 0 ? marks[nextI] - t : 99);
+    $("kBar").style.width = Engine.duration ? (t / Engine.duration * 100) + "%" : "0";
+    return;
+  }
+  const L = LINES[cur];
+  const end = endOf(cur);
+  const p = clamp((t - marks[cur]) / Math.max(0.35, end - marks[cur]), 0, 1);
+  $("kSec").textContent = L.sec + (L.secHint ? " · " + L.secHint : "");
+  $("kPrev").textContent = cur > 0 ? LINES[cur-1].text : "";
+  setKLine(L, p);
+  $("kNext").textContent = cur < N - 1 ? LINES[cur+1].text : "";
+  let nx = -1;
+  for (let i = cur + 1; i < N; i++) if (marks[i] !== null){ nx = i; break; }
+  setPips(nx >= 0 && p >= 1 ? marks[nx] - t : 99);
+  $("kBar").style.width = Engine.duration ? (t / Engine.duration * 100) + "%" : "0";
+}
+let kCurText = null;
+function setKLine(L, p){
+  if (kCurText !== L.text){
+    kCurText = L.text;
+    $("kBase").textContent = L.text;
+    $("kFill").textContent = L.text;
+    $("kLine").className = "kline" + (L.kind === "respuesta" ? " respuesta" : "");
+  }
+  $("kFill").style.clipPath = "inset(0 " + (100 - p * 100).toFixed(1) + "% 0 0)";
+}
+function setPips(gap){
+  const on = gap > 2.6 ? 0 : gap > 1.7 ? 1 : gap > 0.85 ? 2 : gap > 0 ? 3 : 0;
+  [...$("kPips").children].forEach((el, i) => el.classList.toggle("on", i < on));
+}
+$("btnFull").onclick = () => {
+  const el = document.querySelector(".kstage");
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (el.requestFullscreen) el.requestFullscreen().catch(() => toast("El visor no permite pantalla completa"));
+  else toast("Este navegador no permite pantalla completa aquí");
+};
+
+/* ============ EXPORTAR ============ */
+function buildLRC(){
+  const out = ["[ti:El Fuego se Apaga en Invierno]", "[ar:CONAF]", "[by:Sincronizado con Cortafuego]", ""];
+  const idx = [];
+  for (let i = 0; i < N; i++) if (marks[i] !== null) idx.push(i);
+  idx.forEach((i, k) => {
+    const prev = k > 0 ? idx[k - 1] : null;
+    if (prev !== null && marks[i] - marks[prev] > 5){
+      out.push(stamp(marks[prev] + Math.min(3.5, (marks[i] - marks[prev]) * 0.45)));
+    }
+    out.push(stamp(marks[i]) + LINES[i].text);
+  });
+  if (idx.length && Engine.duration){
+    out.push(stamp(Math.min(Engine.duration, marks[idx[idx.length - 1]] + 4)));
+  }
+  return out.join("\n");
+}
+function stamp(t){
+  const m = Math.floor(t / 60), s = Math.floor(t % 60), c = Math.round((t % 1) * 100);
+  return "[" + String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0") + "." +
+         String(Math.min(99, c)).padStart(2,"0") + "]";
+}
+function refreshOut(){ if (mode === "out") $("lrcOut").value = buildLRC(); }
+
+function download(name, text, type){
+  try {
+    const b = new Blob([text], { type: type || "text/plain;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(b); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch (e){
+    toast("La descarga falló. Usa el botón de copiar.");
+  }
+}
+$("btnLrc").onclick = () => {
+  if (!marked()) return toast("Todavía no hay marcas");
+  download("El_Fuego_Se_Apaga_en_Invierno.lrc", buildLRC());
+  toast("Archivo .lrc descargado");
+};
+$("btnJson").onclick = () => {
+  download("karaoke_el_fuego_se_apaga_en_invierno.json",
+    JSON.stringify({ v:1, titulo:"El Fuego se Apaga en Invierno", duracion:Engine.duration, marcas:marks }, null, 2),
+    "application/json");
+  toast("Proyecto guardado");
+};
+$("btnCopy").onclick = async () => {
+  const txt = buildLRC();
+  try { await navigator.clipboard.writeText(txt); toast("Copiado al portapapeles"); }
+  catch {
+    $("lrcOut").value = txt;
+    $("lrcOut").removeAttribute("readonly");
+    $("lrcOut").select();
+    try { document.execCommand("copy"); toast("Copiado"); }
+    catch { toast("Selecciona el texto de abajo y cópialo"); }
+    $("lrcOut").setAttribute("readonly", "");
+  }
+};
+$("jsonInput").addEventListener("change", async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!Array.isArray(d.marcas)) throw new Error("sin marcas");
+    marks = d.marcas.slice(0, N);
+    while (marks.length < N) marks.push(null);
+    cursor = marks.findIndex(m => m === null);
+    if (cursor < 0) cursor = N;
+    renderSync(); renderRows(); refreshOut(); needsDraw = true;
+    toast("Proyecto abierto: " + marked() + " marcas");
+  } catch { toast("Ese archivo no tiene marcas válidas"); }
+});
+
+/* ============ PESTAÑAS ============ */
+document.querySelectorAll("nav.modes button").forEach(b => {
+  b.addEventListener("click", () => setMode(b.dataset.mode));
+});
+function setMode(m){
+  mode = m;
+  document.querySelectorAll("nav.modes button").forEach(b =>
+    b.setAttribute("aria-selected", String(b.dataset.mode === m)));
+  ["sync","edit","play","out"].forEach(k => $("pane-" + k).classList.toggle("hidden", k !== m));
+  if (m === "edit") renderRows();
+  if (m === "out") refreshOut();
+  if (m === "sync") renderSync();
+}
+
+/* ============ BUCLE ============ */
+let lastStamp = "", lastPlay = null;
+function loop(){
+  const playing = Engine.isPlaying();
+  if (playing || needsDraw){ drawWave(); needsDraw = false; }
+  if (playing !== lastPlay){
+    lastPlay = playing;
+    $("btnPlay").textContent = playing ? "Pausar" : "Reproducir";
+  }
+  const s = fmt(Engine.time());
+  if (s !== lastStamp){
+    lastStamp = s;
+    $("cfTime").innerHTML = "<b>" + s + "</b> / " + fmtShort(Engine.duration);
+  }
+  if (mode === "play") renderKaraoke(Engine.time());
+  requestAnimationFrame(loop);
+}
+
+sizeCanvas();
+renderSync();
+setStatus("Esperando el archivo de audio.");
+requestAnimationFrame(loop);
+
+</script>

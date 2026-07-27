@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cancionero de Prevención de Incendios — Karaoke</title>
+<style>
+  :root{
+    --bg:#0E2F22; --bg2:#123A2B; --ink:#0B241A;
+    --cream:#F7F3E8; --orange:#F59E0B; --green-l:#7FB89A;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{font-family:'Segoe UI', Calibri, sans-serif; background:var(--bg); color:var(--cream); display:flex; overflow:hidden;}
+  /* ---------- Sidebar ---------- */
+  #sidebar{width:340px; min-width:340px; height:100vh; overflow-y:auto; background:var(--ink);
+    padding:18px 0; border-right:1px solid #1e5238; transition:margin-left .3s; z-index:20;}
+  #sidebar.hidden{margin-left:-340px;}
+  #sidebar h1{font-family:Georgia, serif; font-size:19px; padding:0 18px 4px;}
+  #sidebar p.sub{font-size:12px; color:var(--green-l); padding:0 18px 14px;}
+  .track{display:flex; align-items:center; gap:12px; padding:9px 18px; cursor:pointer; border-left:4px solid transparent;}
+  .track:hover{background:var(--bg2);}
+  .track.active{background:var(--bg2); border-left-color:var(--orange);}
+  .track .num{font-family:Georgia, serif; font-weight:bold; color:var(--orange); width:26px; text-align:right;}
+  .track .info{flex:1; min-width:0;}
+  .track .t{font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .track .s{font-size:11px; color:var(--green-l);}
+  .track .d{font-size:11px; color:var(--green-l); text-align:right;}
+  .track .ic{color:var(--orange);}
+  /* ---------- Escenario ---------- */
+  #main{flex:1; height:100vh; display:flex; flex-direction:column; position:relative;}
+  #stage{flex:1; overflow:hidden; position:relative;}
+  #bgmedia{position:absolute; inset:0; z-index:0;}
+  #bgmedia img, #bgmedia video{width:100%; height:100%; object-fit:cover;}
+  #fx{position:absolute; inset:0; z-index:1;}
+  #shade{position:absolute; inset:0; z-index:2; background:radial-gradient(ellipse at 50% 55%, rgba(11,36,26,.62) 0%, rgba(11,36,26,.28) 55%, rgba(11,36,26,.55) 100%);}
+  #bignum{position:absolute; right:2vw; top:50%; transform:translateY(-50%); z-index:2;
+    font-family:Georgia, serif; font-weight:bold; font-size:44vh; color:rgba(255,255,255,.05);
+    user-select:none; pointer-events:none; line-height:1;}
+  #lyrics{position:absolute; left:50%; transform:translateX(-50%); z-index:3;
+    width:min(880px, 84%); text-align:center; will-change:transform; padding-bottom:20vh;}
+  #lyrics.smooth{transition:transform .45s cubic-bezier(.22,.9,.3,1);}
+  #lyrics .songtitle{font-family:Georgia, serif; font-size:44px; font-weight:bold; margin-bottom:6px; text-shadow:0 2px 14px rgba(0,0,0,.5);}
+  #lyrics .songstyle{font-size:17px; color:var(--green-l); font-style:italic; margin-bottom:34px;}
+  #lyrics .tag{color:var(--orange); font-weight:bold; font-size:17px; margin:26px 0 8px; text-shadow:0 1px 8px rgba(0,0,0,.6);}
+  #lyrics .line{font-size:26px; line-height:1.55; text-shadow:0 1px 10px rgba(0,0,0,.65);
+    transition:color .25s, transform .25s, opacity .25s;}
+  #lyrics.synced .line{opacity:.55;}
+  #lyrics.synced .line.active{opacity:1; color:var(--orange); transform:scale(1.12); font-weight:600;}
+  #lyrics.synced .line.done{opacity:.35;}
+  /* ---------- Controles ---------- */
+  #controls{background:var(--ink); padding:12px 20px; display:flex; align-items:center; gap:14px;
+    border-top:1px solid #1e5238; z-index:20; flex-wrap:wrap;}
+  button{background:var(--orange); color:var(--ink); border:none; border-radius:50%; width:50px; height:50px;
+    font-size:20px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  button.small{width:38px; height:38px; font-size:15px; background:var(--bg2); color:var(--cream);}
+  button.wide{border-radius:20px; width:auto; height:38px; padding:0 16px; font-size:13px; background:var(--bg2); color:var(--cream); font-weight:600;}
+  button.wide.rec{background:#B3261E; color:#fff;}
+  button:hover{filter:brightness(1.12);}
+  #nowplaying{min-width:0;}
+  #nowplaying .t{font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:240px;}
+  #nowplaying .s{font-size:12px; color:var(--green-l);}
+  #progresswrap{flex:1; display:flex; align-items:center; gap:10px; min-width:140px;}
+  #time,#timetotal{font-size:12px; color:var(--green-l); font-variant-numeric:tabular-nums;}
+  #progress{flex:1; height:6px; background:var(--bg2); border-radius:3px; cursor:pointer;}
+  #bar{height:100%; width:0%; background:var(--orange); border-radius:3px;}
+  #offsetwrap{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--green-l);}
+  /* ---------- Overlays ---------- */
+  #dropzone{position:absolute; inset:0; background:rgba(11,36,26,.95); z-index:50; display:flex;
+    flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:30px;}
+  #dropzone.hidden{display:none;}
+  #dropzone h2{font-family:Georgia, serif; font-size:32px;}
+  #dropzone p{color:var(--green-l); max-width:600px; line-height:1.6; font-size:15px;}
+  #dropzone .pick{background:var(--orange); color:var(--ink); border-radius:26px; width:auto; height:auto; padding:12px 28px; font-size:16px; font-weight:600;}
+  #dropzone .skip{background:var(--bg2); color:var(--cream); border-radius:26px; width:auto; height:auto; padding:10px 22px; font-size:14px;}
+  #dropzone.drag{outline:3px dashed var(--orange); outline-offset:-14px;}
+  #syncbar{position:absolute; left:50%; transform:translateX(-50%); bottom:18px; z-index:30;
+    background:rgba(11,36,26,.92); border:1px solid var(--orange); border-radius:14px; padding:12px 20px;
+    display:none; text-align:center; max-width:80%;}
+  #syncbar.on{display:block;}
+  #syncbar .next{font-size:18px; font-weight:600; color:var(--orange); margin-top:4px;}
+  #syncbar .hint{font-size:12px; color:var(--green-l);}
+  #toggle{position:absolute; left:12px; top:12px; z-index:25;}
+  #toast{position:absolute; top:14px; left:50%; transform:translateX(-50%); z-index:60;
+    background:var(--orange); color:var(--ink); padding:8px 18px; border-radius:18px; font-size:13px;
+    font-weight:600; opacity:0; transition:opacity .3s; pointer-events:none;}
+</style>
+</head>
+<body>
+<aside id="sidebar"></aside>
+<div id="main">
+  <button id="toggle" class="small" title="Mostrar/ocultar playlist">☰</button>
+  <div id="stage">
+    <div id="bgmedia"></div>
+    <canvas id="fx"></canvas>
+    <div id="shade"></div>
+    <div id="bignum">01</div>
+    <div id="lyrics"></div>
+    <div id="syncbar">
+      <div class="hint">MODO SINCRONIZACIÓN — presiona <b>Enter</b> (o haz clic aquí) al iniciar cada línea cantada · <b>Esc</b> cancela</div>
+      <div class="next">…</div>
+    </div>
+    <div id="dropzone">
+      <h2>🎵 Cancionero de Prevención — Karaoke</h2>
+      <p>Arrastra aquí tus <b>MP3 de SUNO</b> y, si quieres, <b>imágenes o videos de fondo</b> (todo de una vez).
+      Se asignan a cada canción por el número o el título en el nombre del archivo
+      (ej: <i>01 El Fuego se Apaga en Invierno.mp3</i>, <i>01.jpg</i>, <i>07.mp4</i>).<br><br>
+      La letra avanza sincronizada con la música. Cada canción trae además un fondo animado propio.</p>
+      <button class="pick" id="pickBtn">Seleccionar archivos</button>
+      <input type="file" id="fileInput" accept="audio/*,image/*,video/*,.json" multiple style="display:none">
+      <button class="skip" id="skipBtn">Continuar sin archivos (modo ensayo)</button>
+      <p style="font-size:12px">F11: pantalla completa · Espacio: play/pausa · Ctrl+←/→: cambiar canción</p>
+    </div>
+  </div>
+  <div id="controls">
+    <button id="prevBtn" class="small" title="Anterior">⏮</button>
+    <button id="playBtn" title="Reproducir / Pausa">▶</button>
+    <button id="nextBtn" class="small" title="Siguiente">⏭</button>
+    <div id="nowplaying"><div class="t">—</div><div class="s">—</div></div>
+    <div id="progresswrap">
+      <span id="time">0:00</span>
+      <div id="progress"><div id="bar"></div></div>
+      <span id="timetotal">0:00</span>
+    </div>
+    <div id="offsetwrap" title="Adelanto/atraso de la letra">
+      <span>letra</span><input type="range" id="offset" min="-10" max="10" value="0" step="0.5" style="width:70px"><span id="offsetVal">0s</span>
+    </div>
+    <button id="syncBtn" class="wide" title="Marcar el tiempo de cada línea para karaoke exacto">⏱ Sincronizar</button>
+    <button id="exportBtn" class="wide" title="Descargar los tiempos marcados">⬇ Tiempos</button>
+    <button id="fsBtn" class="small" title="Pantalla completa">⛶</button>
+  </div>
+</div>
+<div id="toast"></div>
+<audio id="audio"></audio>
+<script>
+const SONGS = [{"n": 1, "title": "El Fuego se Apaga en Invierno", "style": "Cumbia", "dur": 175, "lyrics": "[Intro - gritado]\n¡Brigada presente!\n¡Que suene la cumbia, mi gente!\n¡Uno, dos, tres... prevención!\n\n[Verso 1]\nMientras todos van durmiendo\nbajo lluvia y bajo el frío,\nhay un equipo trabajando\ncon coraje y con estilo.\nCortafuegos en el cerro,\nmotosierra y azadón,\nque el verano no nos pille\nsin hacer la pega hoy.\n\n[Coro]\n¡El fuego se apaga en invierno!\n(¡en invierno!)\n¡La temporada se gana hoy!\n(¡se gana hoy!)\nCon la pala y con el mapa,\ncon la brigada y el corazón,\n¡el fuego se apaga en invierno,\neso es prevención!\n\n[Verso 2]\nHay quien lidera con visión\ny marca bien la dirección,\nhay quien conduce la faena\ny le pone el corazón.\nY los viejos con su historia,\nmil incendios que vivieron,\nles enseñan a los nuevos\nlos secretos que aprendieron.\n\n[Coro]\n¡El fuego se apaga en invierno!\n(¡en invierno!)\n¡La temporada se gana hoy!\n(¡se gana hoy!)\nCon la pala y con el mapa,\ncon la brigada y el corazón,\n¡el fuego se apaga en invierno,\neso es prevención!\n\n[Puente - medio tiempo, palmas]\nQuema controlada, con ciencia y con razón,\nbrigada entrenada, lista pa' la acción.\nTorres vigilando, cámaras y avión,\ny el vecino preparado... ¡esa es la primera línea de acción!\n\n[Verso 3]\nLos incendios que no ocurren\nno salen en televisión,\npero son nuestra victoria,\nla más grande, sí señor.\nBrigadista, analista,\ntorrero y conductor,\n¡todos juntos somos uno,\nsomos fuego de pasión!\n\n[Coro final - subiendo tono]\n¡El fuego se apaga en invierno!\n(¡en invierno!)\n¡La temporada se gana hoy!\n(¡se gana hoy!)\nCon la pala y con el mapa,\ncon la brigada y el corazón,\n¡el fuego se apaga en invierno...\n\n[Outro - gritado con trompetas]\n¡Por los que previenen!\n¡Por toda la tropa del bosque!\n¡Apagando el próximo verano!\n¡EEEEEso! ¡Prevención!"}, {"n": 2, "title": "No Juegues con Fuego", "style": "Pop urbano", "dur": 154, "lyrics": "[Intro]\nYeah, yeah...\nEscucha bien lo que te digo\n(¡préndete, pero no lo prendas!)\n\n[Verso 1 - voz masculina]\nVamo' pa'l cerro con to'a la bandá,\nmochila lista, vamo' a disfrutar.\nPero óyeme bien, no lo vas a olvidar:\nel fuego no es un juego, no es pa' vacilar.\nNi fósforo, ni encendedor,\nla fogata déjala mejor,\nque una chispa chiquitita\nse convierte en un horror.\n\n[Pre-coro - voz femenina]\nSi quieres brillar, brilla tú,\nque el bosque se quede con su luz.\nLa foto perfecta no vale ná\nsi el cerro completo se va a quemar.\n\n[Coro - todos]\nNo juegues con fuego (¡no, no!)\nque el bosque es de todos (¡eo, eo!)\nSi ves humo en el cerro,\nmarca el uno-tres-cero.\nNo juegues con fuego (¡no, no!)\nla llevas si eres cuidadoso (¡eo, eo!)\nEl panorama es completo\ncuando el verde sigue entero.\n\n[Verso 2 - voz femenina]\nLa colilla por la ventana, no no no,\nel vidrio tirado en la montaña, no señor.\nTú eres más inteligente, lo sé yo,\ncuida tu playlist y cuida tu alrededor.\nEl picnic, el carrete, el atardecer,\ntodo eso existe si lo sabes proteger.\nSé viral por hacerlo bien,\nque cuidar también se ve cool, baby, amén.\n\n[Pre-coro - voz masculina]\nSi quieres brillar, brilla tú,\nque el bosque se quede con su luz.\nNo hay historia que subir\nsi no queda bosque que vivir.\n\n[Coro - todos]\nNo juegues con fuego (¡no, no!)\nque el bosque es de todos (¡eo, eo!)\nSi ves humo en el cerro,\nmarca el uno-tres-cero.\nNo juegues con fuego (¡no, no!)\nla llevas si eres cuidadoso (¡eo, eo!)\nEl panorama es completo\ncuando el verde sigue entero.\n\n[Puente - bajando, medio hablado]\nUno-tres-cero, grábatelo en el celu,\nuno-tres-cero, es gratis la llamá.\nVes humo, das aviso, eres héroe de verdad,\nasí de fácil se salva un pedazo de ciudad.\n¡Sube el volumen!\n\n[Coro final x2 - subiendo energía]\nNo juegues con fuego (¡no, no!)\nque el bosque es de todos (¡eo, eo!)\nSi ves humo en el cerro,\nmarca el uno-tres-cero.\nNo juegues con fuego (¡no, no!)\nla llevas si eres cuidadoso (¡eo, eo!)\nEl panorama es completo\ncuando el verde sigue entero.\n\n[Outro]\nUno-tres-cero... (¡marca, marca!)\nUno-tres-cero... (¡avisa, avisa!)\nNo juegues con fuego, yeah."}, {"n": 3, "title": "La Patrulla del Bosque", "style": "Rock infantil", "dur": 194, "lyrics": "[Intro - hablado, voz de personaje]\n¡Atención, atención!\nSe busca gente valiente...\n¿Tú? ¡Sí, TÚ!\n¡Bienvenido a la Patrulla del Bosque!\n\n[Verso 1]\nTengo una misión secreta,\nsoy agente forestal,\ncuido árboles y bichitos,\n¡soy un héroe natural!\nNo necesito una capa,\nni tampoco superpoder,\ncon mis ojos bien abiertos\nyo protejo todo el mes.\n\n[Pre-coro]\n¿Y qué hace la patrulla?\n(¡PRE-VE-NIR!)\n¿Y cómo lo hacemos?\n(¡ASÍ, ASÍ!)\n\n[Coro - coro de niños]\n¡Somos la Patrulla del Bosque!\n(¡pum, pum, pum!)\nCuidamos los árboles del monte\n(¡tú, tú, tú!)\nSi veo humo yo aviso a un grande,\n¡y nunca nunca juego con fuego!\n¡La Patrulla del Bosque llegó!\n(¡ooooh!)\n\n[Verso 2]\nEn mi casa soy inspector,\nreviso todo el lugar:\n\"¡Papá, ese pasto está largo,\nlo tienes que cortar!\"\n\"¡Mamá, guarda bien los fósforos,\nque no los pueda alcanzar!\"\nLos grandes también aprenden\ncuando un niño sabe más.\n\n[Pre-coro]\n¿Y qué hace la patrulla?\n(¡PRE-VE-NIR!)\n¿Y quién nos enseña?\n(¡EL GUARDA-BOSQUES, SÍ!)\n\n[Coro - coro de niños]\n¡Somos la Patrulla del Bosque!\n(¡pum, pum, pum!)\nCuidamos los árboles del monte\n(¡tú, tú, tú!)\nSi veo humo yo aviso a un grande,\n¡y nunca nunca juego con fuego!\n¡La Patrulla del Bosque llegó!\n(¡ooooh!)\n\n[Puente - medio tiempo, con gestos]\nManos arriba... ¡como un árbol gigante!\nMuevo mis ramas... ¡el viento va adelante!\nAhora chiquitito... ¡como una semilla!\n¡Y crezco crezco crezco... qué maravilla!\nEl bosque se demora años en crecer,\n¡por eso lo cuidamos, lo vamos a proteger!\n\n[Verso 3 - más rápido]\nEl zorro me lo agradece,\nel cóndor me vio pasar,\nel copihue está contento\ny el pudú se puso a bailar.\nPorque cuando el bosque vive,\n¡vivimos todos los demás!\n\n[Coro final x2 - todos gritando]\n¡Somos la Patrulla del Bosque!\n(¡pum, pum, pum!)\nCuidamos los árboles del monte\n(¡tú, tú, tú!)\nSi veo humo yo aviso a un grande,\n¡y nunca nunca juego con fuego!\n¡La Patrulla del Bosque llegó!\n\n[Outro - hablado]\n¡Misión cumplida, patrulla!\n¿Repetimos mañana?\n¡SIIIIIÍ!"}, {"n": 4, "title": "Limpia tu Terreno", "style": "Ranchera norteña", "dur": 195, "lyrics": "[Intro - grito]\n¡AJÚA!\n¡Esta va pa' toda la gente del campo!\n¡Agarren la pala, compadres!\n\n[Verso 1]\nMe levanto tempranito\ncon el gallo y su cantar,\nmiro el pasto ya crecido\ny me pongo a trabajar.\nPorque el monte en el verano\nse convierte en un fogón,\ny el que limpia su terreno\nduerme siempre a lo patrón.\n\n[Pre-coro]\n¡Ándale, compadre, no lo deje pa' después!\n¡Que el fuego no perdona al que flojea otra vez!\n\n[Coro - todos con gritos]\n¡Limpia tu terreno! (¡limpia, limpia!)\nCorta bien el pasto alrededor,\ndiez metros despejados\nle dan vida a tu rincón.\n¡Limpia tu terreno! (¡dale, dale!)\nguarda lejos el montón de leña,\nque la casa bien cuidada\nes la casa que no sueña... ¡con el fuego!\n¡AJÚA!\n\n[Verso 2]\nLa ramita que ya cortaste\nno la dejes por ahí,\nque un montón junto a la casa\nes un riesgo pa' vivir.\nLas canaletas con hojitas\nhay que limpiarlas también,\nque una chispa viajerita\nse acomoda allí muy bien.\n\n[Pre-coro]\n¡Ándale, vecina, dígale a su vecindad!\n¡Que un barrio bien limpiecito es pura tranquilidad!\n\n[Coro - todos con gritos]\n¡Limpia tu terreno! (¡limpia, limpia!)\nCorta bien el pasto alrededor,\ndiez metros despejados\nle dan vida a tu rincón.\n¡Limpia tu terreno! (¡dale, dale!)\nguarda lejos el montón de leña,\nque la casa bien cuidada\nes la casa que no sueña... ¡con el fuego!\n\n[Puente - acordeón protagonista, medio hablado]\nY óigame bien, don Pancho, se lo digo de verdad:\nsi va a quemar desechos... ¡mejor pregunte a la autoridad!\nQue hay fechas y permisos, no es llegar y encender,\nla quema sin cuidado... ¡se le puede escapar, pues!\nMejor hacer compostaje, o chipear el material,\n¡la tierra se lo paga y no hay riesgo de quemar!\n¡Échele acordeón!\n\n[Solo de acordeón]\n\n[Verso 3]\nCuando llegue el verano\ncon su sol abrasador,\nmi casita estará lista,\nmi familia, aún mejor.\nEl trabajo de hoy invierno\nes tranquilidad después,\n¡y me tomo un tecito\ncon el deber cumplido, pues!\n\n[Coro final x2 - fiesta total]\n¡Limpia tu terreno! (¡limpia, limpia!)\nCorta bien el pasto alrededor,\ndiez metros despejados\nle dan vida a tu rincón.\n¡Limpia tu terreno! (¡dale, dale!)\nguarda lejos el montón de leña,\nque la casa bien cuidada\nes la casa que no sueña... ¡con el fuego!\n\n[Outro - gritos y trompetas]\n¡AJÚA!\n¡Terreno limpio, corazón contento!\n¡Y nos vemos en la próxima faena, compadres!"}, {"n": 5, "title": "Llama al 130", "style": "Rock and roll", "dur": 160, "lyrics": "[Intro - piano y palmas]\n¡Uno, dos... uno, dos, tres, cuatro!\n(shoo-wop, shoo-wop)\n\n[Verso 1]\nIba yo tranquilamente\ncaminando por ahí,\ncuando vi una columnita\nde humo gris salir.\nNo me puse a sacar fotos,\nno me puse a comentar,\nsaqué altiro el telefonito\n¡y me puse a marcar!\n\n[Pre-coro]\n¿Qué número, qué número?\n(¡dinos cuál es!)\n¡Escúchalo, apréndelo,\ndel derecho y al revés!\n\n[Coro - todos]\n¡Llama al uno-tres-cero!\n(¡uno-tres-cero!)\nSi ves humo en el potrero,\n(¡uno-tres-cero!)\nen el cerro o el sendero,\n(¡uno-tres-cero!)\n¡Ese aviso tan ligero\npuede salvar el bosque entero!\n¡Yeah!\n\n[Verso 2]\nNo pienses \"alguien ya llamó,\nmejor sigo mi camino\",\ntu llamada es la que vale,\n¡no la dejes al destino!\nDi bien dónde estás parado,\nqué es lo que alcanzas a ver,\nun minuto de tu tiempo\ny los héroes van a correr.\n\n[Pre-coro]\n¿Qué número, qué número?\n(¡dinos cuál es!)\n¡Es gratis, funciona,\nlas veinticuatro y también las diez!\n\n[Coro - todos]\n¡Llama al uno-tres-cero!\n(¡uno-tres-cero!)\nSi ves humo en el potrero,\n(¡uno-tres-cero!)\nen el cerro o el sendero,\n(¡uno-tres-cero!)\n¡Ese aviso tan ligero\npuede salvar el bosque entero!\n\n[Puente - twist instrumental, medio hablado]\nY ahora todos a bailar el twist del aviso:\n¡Miro pa' la izquierda! (¿hay humo? ¡no!)\n¡Miro pa' la derecha! (¿hay humo? ¡no!)\n¡Miro para el cerro! (¿hay humo? ¡SÍ!)\n¿Y entonces qué hago?...\n¡LLAMO AL UNO-TRES-CERO!\n¡Sáquele brillo, saxofón!\n\n[Solo de saxofón]\n\n[Verso 3]\nUn incendio chiquitito\nes fácil de apagar,\npero dale veinte minutos\ny no lo puedes parar.\nPor eso cada segundo\nvale oro, vale más,\n¡tu llamada tempranera\nes la magia de verdad!\n\n[Coro final x2 - subiendo]\n¡Llama al uno-tres-cero!\n(¡uno-tres-cero!)\nSi ves humo en el potrero,\n(¡uno-tres-cero!)\nen el cerro o el sendero,\n(¡uno-tres-cero!)\n¡Ese aviso tan ligero\npuede salvar el bosque entero!\n\n[Outro - a capela con palmas]\nUno-tres-cero... (shoo-wop)\nUno-tres-cero... (shoo-wop)\n¡No lo olvides, compañero:\nU-NO, TRES, CE-RO!\n¡Yeah!"}, {"n": 6, "title": "La Ruta de Escape", "style": "Merengue", "dur": 222, "lyrics": "[Intro - brass y tambora]\n¡Familia reunida!\n¡Que nadie se me quede atrás!\n¡Un, dos, tres... a practicar!\n\n[Verso 1]\nEn mi casa hicimos junta,\nla familia en el salón,\ndibujamos un mapita\ncon salidas y un montón.\n\"Si algún día suena alarma,\n¿tú por dónde vas a ir?\"\n¡Todos ya se lo aprendieron,\nhasta el perro sabe huir!\n\n[Pre-coro - mujer]\n¡No es miedo, es estar listo!\n(¡eso es!)\n¡La familia que practica\nsale bien en el receso!\n\n[Coro - todos]\n¡Conoce tu ruta de escape!\n(¡por dónde, por dónde!)\n¡El punto de encuentro no falla!\n(¡responde, responde!)\nSalimos tempranito, sin correr y sin llorar,\n¡la familia preparada siempre vuelve a bailar!\n¡Epa!\n\n[Verso 2]\nLa mochila ya está lista\ndetrás de la puerta, ahí:\ndocumentos, agua, radio,\nlos remedios de la abuelita Mimí.\nUna muda, la linterna,\ny el cargador del celular,\n¡dos minutos y salimos,\nno hay tiempo que regalar!\n\n[Pre-coro - hombre]\n¡No es miedo, es estar listo!\n(¡así es!)\n¡Lo que ensayas en familia\nte protege por el resto!\n\n[Coro - todos]\n¡Conoce tu ruta de escape!\n(¡por dónde, por dónde!)\n¡El punto de encuentro no falla!\n(¡responde, responde!)\nSalimos tempranito, sin correr y sin llorar,\n¡la familia preparada siempre vuelve a bailar!\n\n[Puente - breakdown de tambora, medio hablado]\n¡Atención, atención, que esto es importante!\nCuando digan \"evacuar\"... ¡se evacúa al instante!\nPor la ruta que indicaron, no por donde a ti te dé,\nque la autoridad conoce lo que tú no puedes ver.\nNo te quedes por las cosas, las cosas se compran después,\n¡la vida no se compra... ni una sola vez!\n¿Y dónde nos juntamos si nos llega a separar?\n¡EN EL PUNTO DE ENCUENTRO!\n¡Eso es! ¡A gozar!\n\n[Solo de brass]\n\n[Verso 3]\nDon Ramón con su señora\nya ensayaron su salida,\nla vecina del segundo\ntiene todo en su medida.\nTodo el barrio coordinado,\ncada cual sabe su rol,\n¡y por eso aquí dormimos\nmás tranquilos que un girasol!\n\n[Coro final x2 - fiesta total]\n¡Conoce tu ruta de escape!\n(¡por dónde, por dónde!)\n¡El punto de encuentro no falla!\n(¡responde, responde!)\nSalimos tempranito, sin correr y sin llorar,\n¡la familia preparada siempre vuelve a bailar!\n\n[Outro - todos gritando con brass]\n¡Ruta de escape! (¡lista!)\n¡Punto de encuentro! (¡listo!)\n¡Mochila en la puerta! (¡lista!)\n¡Familia preparada!... ¡LISTA!\n¡Epa, epa, epaaaa!"}, {"n": 7, "title": "Chao Chao Colilla", "style": "Funk disco", "dur": 294, "lyrics": "[Intro - bajo slap y wah-wah]\n¡Uh! ¡Sí!\nEsta noche bailamos...\n¡pero primero, una despedida!\n(chao, chao...)\n\n[Verso 1]\nVas manejando en la carretera,\nla ventanilla abierta, qué manera,\ny ese cigarro que se terminó...\n¡momento, momento! ¿qué haces tú, señor?\nEsa colilla chiquitita que vas a lanzar\nlleva fuego suficiente pa' un desastre armar,\nel pastito seco la está esperando ahí...\n¡mejor apágala adentro y dile así!\n\n[Pre-coro - diva]\n(¡Dile chao, dile chao!)\nAl mal hábito de ayer...\n(¡dile chao, dile chao!)\n¡Que bailando se aprende también!\n\n[Coro - todos]\n¡Chao chao colilla! (¡chao chao!)\n¡Por la ventana nunca más! (¡nunca más!)\n¡Chao chao vidrio en la orilla! (¡chao chao!)\n¡Que con el sol puede quemar! (¡a quemar!)\nApago bien, boto bien, todo en su lugar,\n¡y esta noche con el bosque vamos a bailar!\n¡Uh!\n\n[Verso 2]\nDomingo de picnic, qué rico el lugar,\nla parrilla encendida, vamos a gozar.\nPero cuando termine toda la reunión,\n¡esa braza dormida es pura traición!\nLe echas agua, mucha agua, revuelve otra vez,\nla tocas con la mano - ¿fría? ¡ya ves!\nSi todavía quema, agua una vez más,\n¡fogata bien muerta, ahora sí te vas!\n\n[Pre-coro - diva]\n(¡Dile chao, dile chao!)\nA la braza sin apagar...\n(¡dile chao, dile chao!)\n¡Fría como hielo debe quedar!\n\n[Coro - todos]\n¡Chao chao colilla! (¡chao chao!)\n¡Por la ventana nunca más! (¡nunca más!)\n¡Chao chao vidrio en la orilla! (¡chao chao!)\n¡Que con el sol puede quemar! (¡a quemar!)\nApago bien, boto bien, todo en su lugar,\n¡y esta noche con el bosque vamos a bailar!\n\n[Puente - breakdown funky, medio hablado]\nY ahora escucha este dato, bailarín:\nun vidrio abandonado con el sol del mediodía\nfunciona como lupa... ¡y prende la sequía!\nAsí que en tu mochila la basura va a volver,\n(¡todo de vuelta!)\nlo que trajiste al monte... ¡te lo llevas, pues!\n(¡todo de vuelta!)\nNo cuesta nada, mi amor, es puro estilo,\n¡el que cuida el paisaje baila más tranquilo!\n¡Dale con los bronces!\n\n[Solo de bronces disco]\n\n[Verso 3]\nMírame ahora, qué elegancia la mía,\ncenicero en el auto, bolsita en el día,\nmi fogata apagada quedó como cristal,\n¡soy la estrella de la pista y del pastizal!\nPorque cuidar es la moda que nunca pasó,\nel planeta lo agradece... ¡y la pista también, amor!\n\n[Coro final x2 - fiesta total]\n¡Chao chao colilla! (¡chao chao!)\n¡Por la ventana nunca más! (¡nunca más!)\n¡Chao chao vidrio en la orilla! (¡chao chao!)\n¡Que con el sol puede quemar! (¡a quemar!)\nApago bien, boto bien, todo en su lugar,\n¡y esta noche con el bosque vamos a bailar!\n\n[Outro - bajando con palmas]\nChao chao... (colilla)\nChao chao... (vidrio)\nChao chao... (braza dormida)\n¡Y hola hola... bosque querido!\n¡Uh, sí!"}, {"n": 8, "title": "Mi Casa Preparada", "style": "Axé", "dur": 253, "lyrics": "[Intro - timbal y silbato]\n¡Eeeeeh!\n¡Todo el mundo saltando!\n¡Mi casa está lista! ¿Y la tuya?\n¡Vamos a ver!\n\n[Verso 1 - voz femenina]\nYo miré para mi techo\ny encontré la solución:\nni una hoja, ni una rama,\n¡limpiecito quedó el fogón!\nPorque cuando el fuego viaja\nmanda chispas a volar,\ny una chispa sobre el techo\nes un riesgo pa' mi hogar.\n\n[Pre-coro]\n¡Salta si tu techo está limpio!\n(¡eh, eh!)\n¡Salta si ya vas a empezar!\n(¡eh, eh!)\n¡Que la casa preparada\nes la reina del lugar!\n\n[Coro - todos saltando]\n¡Mi casa preparada! (¡oh, oh, oh!)\n¡Mi techo sin hojitas! (¡oh, oh, oh!)\n¡Rejilla en la ventana,\nla chispa no me visita!\n¡Mi casa preparada! (¡oh, oh, oh!)\n¡Diez metros despejados!\n¡La casa que se cuida\ntiene el verano ganado!\n¡Eeeeeh!\n\n[Verso 2 - voz femenina]\nLe puse maya finita\ndonde entra el ventilador,\nque la pavesa voladora\nno se cuele por error.\nLa leñita para el año\nlejos de la casa está,\ny la manguera conectada\nlista para funcionar.\n\n[Pre-coro]\n¡Salta si tienes tu manguera!\n(¡eh, eh!)\n¡Salta si la vas a comprar!\n(¡eh, eh!)\n¡Que la casa preparada\nes la reina del lugar!\n\n[Coro - todos saltando]\n¡Mi casa preparada! (¡oh, oh, oh!)\n¡Mi techo sin hojitas! (¡oh, oh, oh!)\n¡Rejilla en la ventana,\nla chispa no me visita!\n¡Mi casa preparada! (¡oh, oh, oh!)\n¡Diez metros despejados!\n¡La casa que se cuida\ntiene el verano ganado!\n\n[Puente - percusión sola, medio hablado con palmas]\n¡Atención, atención, que viene el desafío!\n¿Tu número de casa se ve desde el camino?\n(¡SÍ!)\n¡Que el bombero te encuentre sin perder un minutito!\n¿Tu nombre en el portón, tu acceso despejadito?\n(¡SÍ!)\n¡Camión de emergencia pasa sin apurito!\nY con los vecinos, ¿ya se organizaron?\n(¡SÍ!)\n¡Barrio preparado... barrio afortunado!\n¡TIMBAAAAL!\n\n[Break de percusión - todos saltando]\n\n[Verso 3 - subiendo]\nMi vecina hizo lo mismo,\ny el vecino también ya,\ncalle entera preparada,\n¡qué belleza de lugar!\nCuando llegue el veranito\ncon su viento y su calor,\nmi barrio duerme tranquilo...\n¡preparado es mejor!\n\n[Coro final x2 - fiesta total]\n¡Mi casa preparada! (¡oh, oh, oh!)\n¡Mi techo sin hojitas! (¡oh, oh, oh!)\n¡Rejilla en la ventana,\nla chispa no me visita!\n¡Mi casa preparada! (¡oh, oh, oh!)\n¡Diez metros despejados!\n¡La casa que se cuida\ntiene el verano ganado!\n\n[Outro - silbato y timbal]\n¡Casa lista! (¡lista!)\n¡Barrio listo! (¡listo!)\n¡Verano tranquilo! (¡eeeeeh!)\n¡Saltando todo el mundo!"}, {"n": 9, "title": "El Brigadista", "style": "Rock de estadio", "dur": 327, "lyrics": "[Intro - guitarra y tambores]\nOh-oh-oh, oh-oh-oh...\nOh-oh-oh, oh-oh-oh...\n¡Esta va por ustedes!\n\n[Verso 1]\nCuando el cielo se hace gris\ny la alarma empieza a sonar,\nhay mujeres y hombres de acero\nque no dudan en marchar.\nCon el casco y con la pala,\ncon el peso en la espalda va,\ncuesta arriba por el cerro\ndonde nadie más irá.\n\n[Pre-coro]\nNo salen en las portadas,\nno les piden autógrafos,\npero cuando el mundo arde...\n¡son gigantes de verdad!\n\n[Coro - estadio completo]\n¡Oh-oh-oh, el brigadista!\n¡Oh-oh-oh, primera línea!\nCorazón contra el fuego,\ncoraje cuesta arriba.\n¡Oh-oh-oh, la torrera que vigila!\n¡Oh-oh-oh, el piloto en la neblina!\n¡Héroes de este suelo,\ngracias por cuidar la vida!\n\n[Verso 2]\nLa torrera en su atalaya\nescaneando el horizonte está,\nel mecánico en la base\ndeja todo operativo ya.\nEl piloto carga el agua,\nla analista ve el mapa cambiar,\n¡es un equipo, una familia,\nun latido, un solo afán!\n\n[Pre-coro]\nEntrenaron todo el año,\nse prepararon sin parar,\ny cuando llega la hora...\n¡nunca dan un paso atrás!\n\n[Coro - estadio completo]\n¡Oh-oh-oh, el brigadista!\n¡Oh-oh-oh, primera línea!\nCorazón contra el fuego,\ncoraje cuesta arriba.\n¡Oh-oh-oh, la torrera que vigila!\n¡Oh-oh-oh, el piloto en la neblina!\n¡Héroes de este suelo,\ngracias por cuidar la vida!\n\n[Puente - bajando, íntimo]\nY tú que miras desde lejos,\ntambién puedes ayudar:\ndeja libre los caminos,\nque ellos tienen que pasar.\nGuarda el dron, que allá en el cielo\nel avión tiene que entrar...\nsi el dron vuela, el avión para,\n¡y el fuego gana terreno y no hay vuelta atrás!\n\n[Building - tambores subiendo]\nPorque ellos dan su todo...\n(¡oh-oh-oh!)\nlo mínimo es respeto...\n(¡oh-oh-oh!)\n¡QUE SE ESCUCHE EN TODO EL CERRO!\n\n[Solo de guitarra épico]\n\n[Coro final x2 - a todo pulmón]\n¡Oh-oh-oh, el brigadista!\n¡Oh-oh-oh, primera línea!\nCorazón contra el fuego,\ncoraje cuesta arriba.\n¡Oh-oh-oh, la torrera que vigila!\n¡Oh-oh-oh, el piloto en la neblina!\n¡Héroes de este suelo,\ngracias por cuidar la vida!\n\n[Outro - el público coreando con palmas]\nOh-oh-oh, oh-oh-oh...\n(¡gracias, gracias!)\nOh-oh-oh, oh-oh-oh...\n¡Por cuidar la vida!"}, {"n": 10, "title": "Todos Somos Prevención", "style": "Gospel pop", "dur": 271, "lyrics": "[Intro - piano y palmas suaves]\nOooooh... oooooh...\n(¡todos juntos!)\nOooooh... oooooh...\n\n[Verso 1 - voz masculina soul]\nNo hace falta ser gigante\npara un bosque proteger,\nuna mano, otra mano,\ny ya somos un poder.\nEl abuelo con su historia,\nla niña con su canción,\ncada uno pone algo...\n¡y se enciende el corazón!\n\n[Verso 2 - voz femenina soul]\nYo limpio mi terreno,\ntú avisas si hay que avisar,\nél prepara su mochila,\nella enseña en su hogar.\nSon pequeñas decisiones,\ngotas que hacen tempestad...\n¡de cuidado y de cariño\npor nuestra comunidad!\n\n[Pre-coro - los dos]\nY cuando estamos juntos\nno hay fuego que pueda más...\n¡levanta las dos manos\ny canta esta verdad!\n\n[Coro - coro masivo]\n¡Todos somos prevención!\n(¡oooh-oooh!)\n¡Cada casa, cada escuela, cada rincón!\n(¡oooh-oooh!)\nNo esperemos el verano,\nel momento es hoy,\n¡tú y yo, mano con mano,\nsomos la solución!\n¡Todos somos prevención!\n\n[Verso 3 - voz masculina]\nEl que planta, el que enseña,\nel que llama, el que ve,\nel que cuida su fogata,\nel que limpia su traspatio también.\nNo hay tarea que sea chica\ncuando el sueño es tan grande, ves:\n¡un país que no se quema\nlo construimos esta vez!\n\n[Pre-coro - los dos]\nY cuando estamos juntos\nno hay fuego que pueda más...\n¡levanta las dos manos\ny canta esta verdad!\n\n[Coro - coro masivo]\n¡Todos somos prevención!\n(¡oooh-oooh!)\n¡Cada casa, cada escuela, cada rincón!\n(¡oooh-oooh!)\nNo esperemos el verano,\nel momento es hoy,\n¡tú y yo, mano con mano,\nsomos la solución!\n¡Todos somos prevención!\n\n[Puente - bajando, casi a capela con palmas]\nPor los bosques que crecieron\nmil años para llegar...\n(oooh...)\nPor los niños que mañana\nbajo su sombra van a jugar...\n(oooh...)\nPor la vida que nos une,\npor el aire y por el mar...\n¡esta promesa que cantamos\nla vamos a cumplir de verdad!\n\n[Cambio de tono - subida épica]\n¡ARRIBA!\n\n[Coro final - coro masivo + coro de niños, tono arriba]\n¡Todos somos prevención!\n(¡los niños también!)\n¡Cada casa, cada escuela, cada rincón!\n(¡cantando otra vez!)\nNo esperemos el verano,\nel momento es hoy,\n¡tú y yo, mano con mano,\nsomos la solución!\n\n[Repite coro - todos, palmas arriba]\n¡Todos somos prevención!\n(¡oooh-oooh!)\n¡Cada casa, cada escuela, cada rincón!\n(¡oooh-oooh!)\nNo esperemos el verano,\nel momento es hoy,\n¡tú y yo, mano con mano,\n¡SOMOS LA SOLUCIÓN!\n\n[Outro - piano suave, voz de niña sola]\nTodos... somos... prevención...\n(oooh...)\nEmpieza hoy."}, {"n": 11, "title": "Alerta Roja", "style": "Salsa", "dur": 210, "lyrics": "[Intro - trombones y timbal]\n¡Óyeme bien, que hoy no es un día cualquiera!\n¡Azúcar... pero sin candela!\n\n[Verso 1]\nPrendo la radio en la mañana\ny escucho la información:\n\"mucho calor, viento fuerte,\nsequedad en la región\".\nEse trío es peligroso,\nóyelo bien, corazón:\n¡hoy el fuego anda buscando\nla más mínima ocasión!\n\n[Coro]\n¡Alerta roja! (¡hoy no se enciende ná!)\n¡Alerta roja! (¡ni una chispa, na' de na'!)\nCalor, viento y sequía,\nla mezcla más traicionera,\n¡hoy guardamos el fosforito\ny bailamos salsa entera!\n\n[Verso 2]\nHoy no quemo, no parrillo\nen el pasto ni el rincón,\nhoy no paso la máquina\nen la hora de calor.\nLo que pensaba hacer con fuego\nlo dejo pa' otra ocasión,\n¡que un día de paciencia\nvale más que un quemazón!\n\n[Coro]\n¡Alerta roja! (¡hoy no se enciende ná!)\n¡Alerta roja! (¡ni una chispa, na' de na'!)\nCalor, viento y sequía,\nla mezcla más traicionera,\n¡hoy guardamos el fosforito\ny bailamos salsa entera!\n\n[Montuno - sonero improvisando con coro]\n(¡Alerta roja, hoy no se enciende!)\n¡Mira el aviso oficial, que la autoridad no miente!\n(¡Alerta roja, hoy no se enciende!)\n¡Y avísale a tu vecino, y avísale a tu gente!\n(¡Alerta roja, hoy no se enciende!)\n¡Que mañana con la lluvia hacemos fuego nuevamente!\n(¡Alerta roja, hoy no se enciende!)\n¡Trombón, dale caliente... pero solo el trombón, oyente!\n\n[Mambo de trombones]\n\n[Coro final x2 y outro]\n¡Alerta roja! (¡hoy no se enciende ná!)\n¡Alerta roja! (¡ni una chispa, na' de na'!)\nCalor, viento y sequía,\nla mezcla más traicionera,\n¡hoy guardamos el fosforito\ny bailamos salsa entera!\n¡Sin candela... pero con sabor!"}, {"n": 12, "title": "Chispa Traicionera", "style": "Ska", "dur": 216, "lyrics": "[Intro - vientos ska]\n¡Eh! ¡Eh! ¡Cuidado con la chispa!\n(pick it up, pick it up!)\n\n[Verso 1]\nDon José con su esmeril\ncortando fierro en el portón,\ncada chispa que saltaba\naterrizaba en el pastón.\n\"¡Pare, pare, don José,\nmire bien alrededor:\nprimero moje la zona\ny despeje, por favor!\"\n\n[Coro - saltando]\n¡Chispa, chispa traicionera!\n(¡cuidado, cuidado!)\n¡Salta donde no la esperas!\n(¡mojado, mojado!)\nSi hay faena con chispita:\nagua cerca, zona limpita,\ntempranito la pega entera...\n¡y le ganas a la traicionera!\n¡Hey!\n\n[Verso 2]\nLa soldadora en el campo,\nla desbrozadora al ras,\nla cosechadora al medio día...\n¡puro riesgo nada más!\nLa pega se hace temprano\ncuando hay fresco y humedad,\ncon extintor a la mano\ny un compadre pa' vigilar.\n\n[Coro - saltando]\n¡Chispa, chispa traicionera!\n(¡cuidado, cuidado!)\n¡Salta donde no la esperas!\n(¡mojado, mojado!)\nSi hay faena con chispita:\nagua cerca, zona limpita,\ntempranito la pega entera...\n¡y le ganas a la traicionera!\n\n[Puente - solo bajo y batería, hablado]\n¡Atención, cuadrilla, el checklist de la faena!\n¿Zona despejada tres metros? (¡SÍ!)\n¿Agua o extintor al lado? (¡SÍ!)\n¿Horario tempranero? (¡SÍ!)\n¿Alguien mirando el pasto media hora después? (¡SÍ!)\n¡Porque la chispa se esconde y aparece después, eh!\n¡VIENTOS!\n\n[Solo de trompeta y trombón - skanking]\n\n[Coro final x2]\n¡Chispa, chispa traicionera!\n(¡cuidado, cuidado!)\n¡Salta donde no la esperas!\n(¡mojado, mojado!)\nSi hay faena con chispita:\nagua cerca, zona limpita,\ntempranito la pega entera...\n¡y le ganas a la traicionera!\n\n[Outro]\n¡Faena segura! (¡hey!)\n¡Campo tranquilo! (¡hey!)\n¡Chispa dominada! (¡hey, hey, HEY!)"}, {"n": 13, "title": "Parque Querido", "style": "Andino (saya)", "dur": 237, "lyrics": "[Intro - zampoñas y bombo]\n¡Jallalla! ¡Arriba el parque!\n¡Caminante, ven a celebrar!\n\n[Verso 1]\nMe fui de excursión al parque\ncon mochila y con amor,\nme recibió el guardaparques:\n\"bienvenido, visitador.\nAquí el fuego está prohibido,\nni fogata ni farol,\nque este bosque milenario\nno conoce otro calor... ¡que el del sol!\"\n\n[Coro - todos]\n¡Parque querido, yo te cuido!\n(¡jallalla, jallalla!)\n¡Por el sendero voy contigo!\n(¡camina, camina!)\nMi cocinilla en su lugar,\nmi basura de vuelta va,\n¡el que ama la montaña\nla deja igual... o mejor la va a dejar!\n\n[Verso 2]\nSi quiero comer caliente,\nla zona habilitada está,\ncocinilla, no fogata,\ny vigilo hasta apagar.\nDel sendero no me salgo,\nque la flora sabe más,\ny si veo alguna humareda...\n¡al guardaparques voy a avisar!\n\n[Coro - todos]\n¡Parque querido, yo te cuido!\n(¡jallalla, jallalla!)\n¡Por el sendero voy contigo!\n(¡camina, camina!)\nMi cocinilla en su lugar,\nmi basura de vuelta va,\n¡el que ama la montaña\nla deja igual... o mejor la va a dejar!\n\n[Puente - bombo y palmas, coro femenino]\nMil años tiene el alerce,\nmil años el queñual,\ndiez minutos de descuido...\n¡y no vuelven nunca más!\nPor eso yo te prometo,\nmontaña de mi cantar:\n¡mis fotos me las llevo,\nmis huellas nada más!\n\n[Interludio de zampoñas y quena - fiesta]\n\n[Coro final x2 - subiendo]\n¡Parque querido, yo te cuido!\n(¡jallalla, jallalla!)\n¡Por el sendero voy contigo!\n(¡camina, camina!)\nMi cocinilla en su lugar,\nmi basura de vuelta va,\n¡el que ama la montaña\nla deja igual... o mejor la va a dejar!\n\n[Outro - todos]\n¡Jallalla el parque! (¡jallalla!)\n¡Jallalla el bosque! (¡jallalla!)\n¡Jallalla el que cuida!\n¡JALLALLAAAA!"}, {"n": 14, "title": "Cuenta Conmigo, Vecino", "style": "Vallenato", "dur": 262, "lyrics": "[Intro - acordeón fiestero]\n¡Epa! ¡Esta parranda es del barrio entero!\n¡Y en este barrio nadie se queda atrás!\n\n[Verso 1]\nEn mi calle vive doña Rosa,\nochenta años de dulzura y de bondad,\ncamina despacito con su bastoncito\ny vive solita en la mitad.\nPor eso en la reunión de enero\nel barrio entero decidió:\n\"si algún día hay que salir corriendo...\n¡doña Rosa sale primero, sí señor!\"\n\n[Coro - todos]\n¡Cuenta conmigo, vecino!\n(¡cuenta conmigo!)\n¡Que en la emergencia yo paso por ti!\n(¡yo paso por ti!)\nEl barrio que se organiza\ntiene un ángel en cada esquina,\n¡y aquí nadie, pero nadie,\nse me queda sin salir!\n¡Epa!\n\n[Verso 2]\nDon Julio con su sillita de ruedas\nya sabe quién lo viene a buscar,\nla señora Elvira con sus remedios\nen la mochila los tiene ya.\nHicimos una listita\nde quién necesita más,\ncada casa con su encargado...\n¡así se cuida de verdad!\n\n[Coro - todos]\n¡Cuenta conmigo, vecino!\n(¡cuenta conmigo!)\n¡Que en la emergencia yo paso por ti!\n(¡yo paso por ti!)\nEl barrio que se organiza\ntiene un ángel en cada esquina,\n¡y aquí nadie, pero nadie,\nse me queda sin salir!\n\n[Puente - acordeón bajando, medio hablado]\nY óigame, mi gente, que esto es con tiempo:\nla lista se hace en invierno, no cuando hay humo adentro.\n¿Quién vive solo? ¿Quién no escucha bien?\n¿Quién no puede caminar? ¿Quién no tiene con quién?\nTimbre por timbre, casa por casa,\n¡el censo del cariño es lo que nos abraza!\n¡Acordeóoooon!\n\n[Solo de acordeón - parranda]\n\n[Verso 3]\nY cuando pasó la alarma\ny todos pudimos volver,\ndoña Rosa hizo unas tortillas\npa'l barrio entero comer.\n\"Gracias, mis muchachitos\",\ndijo con emoción...\n¡y esa es la mejor paga\nque recibe el corazón!\n\n[Coro final x2 - fiesta]\n¡Cuenta conmigo, vecino!\n(¡cuenta conmigo!)\n¡Que en la emergencia yo paso por ti!\n(¡yo paso por ti!)\nEl barrio que se organiza\ntiene un ángel en cada esquina,\n¡y aquí nadie, pero nadie,\nse me queda sin salir!\n\n[Outro]\n¡Doña Rosa! (¡presente!)\n¡Don Julio! (¡presente!)\n¡El barrio completo!... ¡PRESENTE!\n¡Epa, epaaaa!"}, {"n": 15, "title": "Mi Mascota También", "style": "Bachata", "dur": 252, "lyrics": "[Intro - requinto juguetón]\nOye... esta bachata tiene cuatro patas...\n¡y mueve la cola!\n\n[Verso 1]\nMi perrito se llama Choco\ny es parte de mi corazón,\npor eso cuando hicimos\nel plan de evacuación,\nle pusimos su chapita\ncon mi número de tel,\nsu correa está en la puerta...\n¡porque él también viene, mi bien!\n\n[Pre-coro - mujer]\nQue no se quede, que no se quede,\namarradito no puede estar...\nQue viene conmigo, que viene conmigo,\n¡en la mochila va su comida y ya!\n\n[Coro - los dos]\n¡Mi mascota también! (¡también!)\n¡tiene plan de emergencia, mi bien! (¡mi bien!)\nCorrea, chapita y transportador,\nagüita, comida y mucho amor.\n¡Mi mascota también! (¡también!)\n¡se evacúa conmigo, ya ves! (¡ya ves!)\nPorque en esta familia, óyelo bien:\n¡no se queda nadie... ni el pez!\n\n[Verso 2]\nLa gatita de mi abuela\ntiene caja pa' viajar,\nla tenemos siempre a mano,\nno hay que ponerse a buscar.\nY el canario, y la tortuga,\ntodos tienen su lugar,\n¡ensayamos con cariño\npa' que nadie quede atrás!\n\n[Pre-coro - hombre]\nQue no se suelte, que no se suelte,\nque asustado se puede perder...\nQue va seguro, que va segurito,\n¡en su cajita o de la correa, mi bien!\n\n[Coro - los dos]\n¡Mi mascota también! (¡también!)\n¡tiene plan de emergencia, mi bien! (¡mi bien!)\nCorrea, chapita y transportador,\nagüita, comida y mucho amor.\n¡Mi mascota también! (¡también!)\n¡se evacúa conmigo, ya ves! (¡ya ves!)\nPorque en esta familia, óyelo bien:\n¡no se queda nadie... ni el pez!\n\n[Puente - bajando, romántico-juguetón]\nY si tienes gallinitas, caballito o un corral,\npiensa desde ahorita pa' dónde los vas a llevar...\nHabla con el vecino que tiene su camión,\nque los animales grandes... ¡también tienen corazón!\nY nunca, nunca, nunca los dejes amarrados,\n¡que sueltos en el campo se salvan solitos, cuidado!\n\n[Solo de requinto - bailable]\n\n[Coro final x2]\n¡Mi mascota también! (¡también!)\n¡tiene plan de emergencia, mi bien! (¡mi bien!)\nCorrea, chapita y transportador,\nagüita, comida y mucho amor.\n¡Mi mascota también! (¡también!)\n¡se evacúa conmigo, ya ves! (¡ya ves!)\nPorque en esta familia, óyelo bien:\n¡no se queda nadie... ni el pez!\n\n[Outro]\nChoco, la gata, el canario y yo...\n¡guau, miau, pío... y adiós!\n(¡todos evacuados con sabor!)"}, {"n": 16, "title": "Fuente Oficial", "style": "Electro pop", "dur": 199, "lyrics": "[Intro - synth building]\nPing... ping... ping...\n¿Otro audio reenviado?\nEspera... ¡verifica primero!\n\n[Verso 1]\nMe llegó un audio al grupo:\n\"¡que se quema no sé qué!\",\nuna foto de otro año,\nun rumor de no sé quién.\nMi dedito ya temblaba\nsobre el botón de reenviar...\n¡pero respiré profundo\ny me puse a verificar!\n\n[Pre-coro]\n¿Quién lo dice? ¿Dónde está?\n¿Es de hoy o es de otra edad?\nSi no viene de la fuente...\n¡no lo voy a viralizar!\n\n[Coro - drop]\n¡Fuente oficial! (¡oh-oh-oh!)\n¡Solo comparto fuente oficial! (¡eh-eh-eh!)\nEn la emergencia de verdad\nla información es vital,\n¡no reenvíes el rumor,\ncomparte el canal\no-fi-cial!\n(¡fuente, fuente oficial!)\n\n[Verso 2]\nSigo las cuentas verificadas\nde emergencia y de bomberos,\nla radio de mi comuna,\nlos avisos verdaderos.\nSi mi tía manda un audio\nyo le digo con amor:\n\"tía linda, no lo mande...\n¡hasta chequearlo mejor!\"\n\n[Pre-coro]\n¿Quién lo dice? ¿Dónde está?\n¿Es de hoy o es de otra edad?\nSi no viene de la fuente...\n¡no lo voy a viralizar!\n\n[Coro - drop]\n¡Fuente oficial! (¡oh-oh-oh!)\n¡Solo comparto fuente oficial! (¡eh-eh-eh!)\nEn la emergencia de verdad\nla información es vital,\n¡no reenvíes el rumor,\ncomparte el canal\no-fi-cial!\n\n[Puente - bajando, voz con vocoder]\nUn rumor en emergencia\npuede hacer evacuar mal...\npuede colapsar las líneas\nque salvan vidas de verdad...\nTu dedo tiene poder...\n(poder, poder...)\n¡úsalo para el bien!\n(¡3, 2, 1...!)\n\n[Drop instrumental - festival]\n\n[Coro final x2 - subiendo]\n¡Fuente oficial! (¡oh-oh-oh!)\n¡Solo comparto fuente oficial! (¡eh-eh-eh!)\nEn la emergencia de verdad\nla información es vital,\n¡no reenvíes el rumor,\ncomparte el canal\no-fi-cial!\n(¡fuente, fuente oficial!)\n\n[Outro - synth bajando]\nPing... ping...\n¿Verificaste?... ¡ahora sí!\nComparte... salva... baila.\n(¡fuente oficial!)"}, {"n": 17, "title": "Los Fósforos No Se Tocan", "style": "Pop infantil", "dur": 157, "lyrics": "[Intro]\n¡Hola, hola, amiguitos!\n¿Listos para cantar?\n¡Manitos arriba... y a bailar!\n\n[Verso 1]\nEncontré una cajita\nbrillante en el cajón...\n¿La toco? (¡NO, NO, NO!)\n¿La agarro? (¡NO, NO, NO!)\nSon fósforos, son de grandes,\n¡yo le aviso a un adulto, adiós!\n\n[Coro]\nLos fósforos no se tocan,\n¡no, no, no! (¡no, no, no!)\nEl encendedor tampoco,\n¡no, no, no! (¡no, no, no!)\nSi yo veo uno tirado,\nllamo a un grande de inmediato:\n\"¡Mira lo que encontré yo!\"\n¡Muy bien hecho, campeón!\n\n[Verso 2]\nEn la casa de mi tía\nun encendedor yo vi...\n¿Lo toco? (¡NO, NO, NO!)\n¿Es juguete? (¡NO, NO, NO!)\nSe lo dije a mi tía\n¡y ella me aplaudió así!\n(clap-clap-clap-clap)\n\n[Coro]\nLos fósforos no se tocan,\n¡no, no, no! (¡no, no, no!)\nEl encendedor tampoco,\n¡no, no, no! (¡no, no, no!)\nSi yo veo uno tirado,\nllamo a un grande de inmediato:\n\"¡Mira lo que encontré yo!\"\n¡Muy bien hecho, campeón!\n\n[Puente - con gestos]\nEl fuego es calientito... (¡uy, uy, uy!)\nel fuego es peligroso... (¡ay, ay, ay!)\nlas manitos atrás... (¡atrás, atrás!)\n¡y a un grande le voy a avisar!\n(¡eso es!)\n\n[Coro final x2 - más rápido]\nLos fósforos no se tocan,\n¡no, no, no! (¡no, no, no!)\nEl encendedor tampoco,\n¡no, no, no! (¡no, no, no!)\nSi yo veo uno tirado,\nllamo a un grande de inmediato:\n\"¡Mira lo que encontré yo!\"\n¡Muy bien hecho, campeón!\n\n[Outro]\n¡No, no, no! (¡no, no, no!)\n¡Muy bien, amiguitos!\n¡Chao chao, fosforitos!"}, {"n": 18, "title": "Humito Gris", "style": "Reggae infantil", "dur": 164, "lyrics": "[Intro - guitarra reggae]\nYeah... amiguitos detectives...\nabran bien los ojitos...\n¿qué vemos por ahí?\n\n[Verso 1]\nYo soy un detective,\nmiro para acá y allá,\ncon mis ojos de lechuza\ntodo lo puedo mirar.\nY si veo por la ventana\nalgo gris subir, subir...\n¡ese es el humito\nque me quiere decir!\n\n[Coro]\nHumito gris, humito gris,\n(¿qué hago, qué hago?)\n¡le aviso a un grande\ny lo hago feliz!\nHumito gris allá en el cerro,\n(¡lo vi, lo vi!)\n\"¡Mamá, papá, tía, abuelito...\nhay humito gris ahí!\"\n\n[Verso 2]\nNo me acerco a mirarlo,\nno me quedo yo ahí,\nmi trabajo es avisarle\na un grande, ¡sí, sí, sí!\nLos grandes llaman por teléfono\na los que saben apagar,\n¡y yo ya cumplí mi parte:\nsoy detective ejemplar!\n\n[Coro]\nHumito gris, humito gris,\n(¿qué hago, qué hago?)\n¡le aviso a un grande\ny lo hago feliz!\nHumito gris allá en el cerro,\n(¡lo vi, lo vi!)\n\"¡Mamá, papá, tía, abuelito...\nhay humito gris ahí!\"\n\n[Puente - suave, con gestos]\nOjitos de lechuza... (miro, miro)\nnaricita de conejo... (huelo, huelo)\npiernitas de gacela... (¡corro donde el abuelo!)\nboquita de campana... (¡AVISO ALTIRO, SIN PENA!)\n\n[Coro final x2]\nHumito gris, humito gris,\n(¿qué hago, qué hago?)\n¡le aviso a un grande\ny lo hago feliz!\nHumito gris allá en el cerro,\n(¡lo vi, lo vi!)\n\"¡Mamá, papá, tía, abuelito...\nhay humito gris ahí!\"\n\n[Outro - bajito]\nDetective cumplió su misión...\n(¡bravo, bravo!)\nel bosque dice gracias...\n(¡de nada, de nada!)\nyeah... humito avisado... bosque salvado."}, {"n": 19, "title": "De la Mano", "style": "Marcha infantil", "dur": 173, "lyrics": "[Intro - tambor de marcha]\n¡Un, dos! ¡Un, dos!\n¡La fila del tren se formó!\n¿Están listos mis vagones?\n(¡SÍÍÍ!)\n¡Entonces vamos con la canción!\n\n[Verso 1]\nCuando suena la campana\no la tía dice \"a salir\",\nyo me pongo en la filita,\n¡este juego es para mí!\nLe doy la mano a la tía\no a mi mamá o mi papá,\ny caminando, caminando,\n¡salimos todos a jugar!\n\n[Coro - marchando]\n¡De la mano, de la mano!\n(¡un, dos, un, dos!)\n¡Caminando sin correr!\n(¡así, así!)\nNo me suelto, no me escondo,\nno me vuelvo a devolver,\n¡de la mano hasta el puntito\ndonde nos vamos a ver!\n(¡llegué, llegué!)\n\n[Verso 2]\nMi juguete favorito\nse quedó en el sillón...\n¿me devuelvo? (¡NO, NO, NO!)\n¡los juguetes esperan, yo no!\nLo primero soy yo mismo,\nmi familia y mi mascota está,\nlos juguetes son valientes...\n¡solitos saben esperar!\n\n[Coro - marchando]\n¡De la mano, de la mano!\n(¡un, dos, un, dos!)\n¡Caminando sin correr!\n(¡así, así!)\nNo me suelto, no me escondo,\nno me vuelvo a devolver,\n¡de la mano hasta el puntito\ndonde nos vamos a ver!\n(¡llegué, llegué!)\n\n[Puente - juego de eco]\nCuando la tía dice \"¡vamos!\"...\n(¡vamos, vamos!)\nyo respondo \"¡aquí estoy!\"...\n(¡aquí estoy!)\nCuenta uno, cuenta dos...\n(¡uno, dos!)\n¡la tía nos cuenta a todos\ny no falta ni un campeón!\n(¡ni uno, no señor!)\n\n[Verso 3]\nPracticamos en el jardín,\npracticamos con mamá,\ny por eso si es de verdad\n¡yo ya sé caminar!\nSin llorar y sin miedito,\nporque yo ya soy mayor,\n¡el que practica el jueguito\nlo hace siempre mejor!\n\n[Coro final x2 - más animado]\n¡De la mano, de la mano!\n(¡un, dos, un, dos!)\n¡Caminando sin correr!\n(¡así, así!)\nNo me suelto, no me escondo,\nno me vuelvo a devolver,\n¡de la mano hasta el puntito\ndonde nos vamos a ver!\n(¡llegué, llegué!)\n\n[Outro - tambor]\n¡Un, dos! ¡Un, dos!\n¡Todos llegamos, misión cumplida!\n¡Aplauso para el tren!\n(clap-clap-clap)\n¡CHU-CHUUUU!"}, {"n": 20, "title": "Señor Fuego", "style": "Rock humorístico con personajes", "dur": 217, "lyrics": "[Intro - hablado, voz de reportero muy formal]\nBuenas tardes. Estamos hoy con un invitado\nmuy caliente, muy polémico...\n¡el Señor Fuego!\n(aplausos tibios)\n\n[Verso 1 - reportero canta]\nDígame, Señor Fuego,\n¿cómo empieza su labor?\n(voz de fuego, dramática y rasposa:)\n\"¡Con muy poco, mijito!\nUna chispa, un descuidito, un fósforo, un error.\nMe encanta el pasto seco,\ncrecido y sin cortar...\n¡es mi alfombra roja\npara empezar a caminar!\"\n\n[Coro - todos]\n¡Uuuuh, qué confesión!\n(¡anota, anota!)\n¡El fuego dijo todo\nen televisión!\n(¡qué bochorno, qué papelón!)\nSi sabemos lo que quiere...\n¡le hacemos lo contrario!\n¡Chan chan!\n\n[Verso 2 - reportero]\n¿Y qué cosas lo detienen?\n¿Qué le arruina la función?\n(voz de fuego, ofendida:)\n\"¡Ay, no me lo recuerde,\nque me da indignación!\nEl pasto cortito... ¡qué horror!\nEl terreno limpiecito... ¡pavor!\n¡Y esa gente que ve humo\ny llama altiro...!\n¡Me arruinan el show, señor!\"\n\n[Coro - todos]\n¡Uuuuh, qué confesión!\n(¡anota, anota!)\n¡El fuego dijo todo\nen televisión!\n(¡qué bochorno, qué papelón!)\nSi sabemos lo que quiere...\n¡le hacemos lo contrario!\n¡Chan chan!\n\n[Puente - reportero, ritmo bajando]\nUna última pregunta, con total honestidad:\n¿cuál es su peor pesadilla, su kriptonita real?\n(voz de fuego, casi llorando:)\n\"Una familia preparada...\nun barrio organizado...\n¡UNA COMUNA ENTERA QUE HIZO PREVENCIÓN!\n¡Ahí yo no tengo NADA que hacer!\n¡Me voy chiquitito... me apagan... FIN DE LA ENTREVISTA!\"\n(portazo)\n\n[Coro final x2 - fiesta]\n¡Uuuuh, qué confesión!\n(¡anota, anota!)\n¡El fuego dijo todo\nen televisión!\n(¡qué bochorno, qué papelón!)\nSi sabemos lo que quiere...\n¡le hacemos lo contrario!\n¡Prevención!\n\n[Outro - reportero]\nY así termina la entrevista más caliente del año.\nYa saben, estimado público:\nel Señor Fuego odia la prevención...\n¡démosle en el gusto... digo, en el disgusto!\nHasta la próxima. Chan."}, {"n": 21, "title": "El Ranking del Descuido", "style": "Rock humorístico tipo ranking televisivo", "dur": 224, "lyrics": "[Intro - redoble y organillo]\n¡Damas, caballeros, niños y mascotas!\n¡Bienvenidos al ranking más vergonzoso de la semana!\n¡El Top Cinco... del DESCUIDO!\n(¡ooooh!)\n\n[Coro]\n¡El ranking del descuido!\n(¡qué vergüenza, qué papelón!)\n¡Descuidos que provocan\nmás de algún quemazón!\nPero atento, no te rías,\nque esto tiene solución:\n¡el que sale de este ranking...\nse gana la prevención!\n\n[Verso 1 - lugar 5]\n¡En el QUINTO lugar!\n(redoble... ¡tan!)\n¡La colilla voladora\nque salió por la ventana!\n(¡nooo!)\nSu dueño dijo \"no es nada\"...\n¡y quemó media semana!\n(¡uuuh, descalificado!)\n\n[Verso 2 - lugar 4]\n¡En el CUARTO lugar!\n(redoble... ¡tan!)\n¡La parrilla del domingo\nabandonada con brasitas!\n(¡nooo!)\nSe fueron a la siesta...\n¡y despertó a toditas las casitas!\n(¡qué bochorno, caballero!)\n\n[Coro]\n¡El ranking del descuido!\n(¡qué vergüenza, qué papelón!)\n¡Descuidos que provocan\nmás de algún quemazón!\nPero atento, no te rías,\nque esto tiene solución:\n¡el que sale de este ranking...\nse gana la prevención!\n\n[Verso 3 - lugar 3]\n¡En el TERCER lugar!\n(redoble... ¡tan!)\n¡El pasto de don Floro,\nmás alto que un dinosaurio!\n(¡nooo!)\n\"Lo corto el otro año\", dijo...\n¡y ardió el vecindario!\n(¡don Floro, por favor!)\n\n[Verso 4 - lugar 2]\n¡En el SEGUNDO lugar!\n(redoble... ¡tan!)\n¡La quema sin permiso\nun día de viento y calor!\n(¡NOOO!)\n\"Yo la tengo controlada\"...\n¡famosas últimas palabras, señor!\n(¡retírese del estudio!)\n\n[Puente - suspenso, bajando]\nY llegamos al momento\nque todos quieren saber...\nel PRIMER lugar del descuido,\nel campeón del no-deber...\n(redoble largo...)\n\n[Verso 5 - lugar 1, explosión]\n¡EN EL PRIMER LUGAR!\n¡EL QUE VIO EL HUMO...\nY NO LLAMÓ!\n(¡NOOOOO!)\n\"Alguien más ya habrá llamado\",\npensó, bostezó y se acostó...\n¡Y el incendio chiquitito\nen gigante se convirtió!\n(¡el peor de todos! ¡abucheo general!)\n(¡buuuu!)\n\n[Coro final x2 - fiesta]\n¡El ranking del descuido!\n(¡qué vergüenza, qué papelón!)\n¡Descuidos que provocan\nmás de algún quemazón!\nPero atento, no te rías,\nque esto tiene solución:\n¡el que sale de este ranking...\nse gana la prevención!\n\n[Outro]\n¡Y recuerde, estimado público:\nsi usted apareció en este ranking...\ntodavía está a tiempo!\n¡Corte el pasto, apague la brasa,\ny si ve humo... UNO-TRES-CERO!\n¡Hasta la próxima edición!\n¡Chan chan!"}, {"n": 22, "title": "Déjame Llegar a Viejo", "style": "Balada tierna con humor", "dur": 231, "lyrics": "[Intro - guitarra suave]\n(voz de arbolito, tierna:)\nHola. Soy un árbol.\nTengo quince años...\nque para un árbol es como ser guagua.\nEsta es mi canción.\n\n[Verso 1]\nYo quiero ser un abuelo,\nun abuelo de verdad,\ncon el tronco bien arrugado\ny quinientos años de edad.\nQuiero que suban los niños\nde los niños que hoy veo pasar,\ny darle sombra a la nieta\nde la señora del pan.\n\n[Coro]\nDéjame llegar a viejo...\n(a viejo, a viejo)\nque un árbol se demora\nen ser abuelo un montonón.\nYo crezco lento, lentito,\nun poquito por estación...\n¡pero un descuido de un minuto\nme borra la ilusión!\n\n[Verso 2]\nMi bisabuelo era un alerce\nque vivió tres mil años, ¡tres mil!\nConoció a los dinosaurios...\n(bueno, no... pero casi, sí).\nYo también quiero contarle\na mis nietos con emoción:\n\"cuando yo era chiquitito...\n¡la gente hizo prevención!\"\n\n[Coro]\nDéjame llegar a viejo...\n(a viejo, a viejo)\nque un árbol se demora\nen ser abuelo un montonón.\nYo crezco lento, lentito,\nun poquito por estación...\n¡pero un descuido de un minuto\nme borra la ilusión!\n\n[Puente - hablado, tierno]\nLa gente a veces no sabe\nque yo hago hartas cosas:\nfabrico el aire que respiran,\n(de nada, por cierto),\nle doy casa al chuncho, a la abeja y al ratón,\nsujeto el cerro con mis raíces\npara que no se caiga...\nSoy como un superhéroe...\npero plantado.\nPor eso les pido un favorcito chiquitito:\n\n[Verso 3 - subiendo, esperanzador]\nCorta el pasto de mi lado,\nno me tires tu fogón,\ny si ves humo cerquita,\n¡avisa con el corazón!\nQue si tú me cuidas hoy día,\nyo te juro, ¡palabra de árbol!,\nque tus nietos y mis nietos\nvan a jugar en mi rincón.\n\n[Coro final - con coro de niños]\n¡Déjame llegar a viejo!\n(¡a viejo, a viejo!)\nque un árbol se demora\nen ser abuelo un montonón.\nYo crezco lento, lentito,\nun poquito por estación...\n¡y contigo cuidándome...\nvoy a ser el abuelo mejor!\n\n[Outro - trompeta suave]\n(voz de arbolito:)\nGracias por escuchar mi canción.\nAhora, si me disculpan...\nvoy a seguir creciendo.\n(sonido de crecer: \"ñiiiic\")\nChao chao."}];
+
+/* Temática visual por canción: gradiente de fondo + efecto de partículas */
+const THEMES = [
+ {g:['#12352a','#0a1f18'], fx:'rain',     c:['#7FB89A']},                       // 1 cumbia invierno
+ {g:['#241a3d','#0d1030'], fx:'note',     c:['#F59E0B','#7FB89A','#e879f9']},   // 2 urbano
+ {g:['#14401f','#0a2413'], fx:'leaf',     c:['#7FB89A','#a3d977','#F59E0B']},   // 3 patrulla
+ {g:['#c2711f','#3d2408'], fx:'leaf',     c:['#ffd98a','#F59E0B']},             // 4 ranchera amanecer
+ {g:['#3a1d3f','#140a20'], fx:'note',     c:['#F7F3E8','#F59E0B']},             // 5 rock&roll
+ {g:['#0f3a3a','#08201f'], fx:'confetti', c:['#F59E0B','#7FB89A','#f472b6']},   // 6 merengue
+ {g:['#2b1045','#0d0620'], fx:'sparkle',  c:['#f9a8d4','#93c5fd','#fde68a']},   // 7 disco
+ {g:['#0c4a2f','#062616'], fx:'confetti', c:['#F59E0B','#F7F3E8','#7FB89A']},   // 8 axé
+ {g:['#402410','#120a05'], fx:'beam',     c:['#F59E0B']},                       // 9 estadio
+ {g:['#7a4b12','#241505'], fx:'rise',     c:['#ffe9b3','#F59E0B']},             // 10 gospel
+ {g:['#7a1f10','#2a0b05'], fx:'sparkle',  c:['#fda45c','#F59E0B']},             // 11 alerta roja
+ {g:['#1d1d1d','#000000'], fx:'confetti', c:['#F7F3E8','#F59E0B']},             // 12 ska
+ {g:['#274c63','#0e1f2c'], fx:'snow',     c:['#F7F3E8']},                       // 13 andino
+ {g:['#5c2f14','#1d0e05'], fx:'firefly',  c:['#ffd98a']},                       // 14 vallenato
+ {g:['#84324a','#2a0f1a'], fx:'heart',    c:['#f9a8d4','#F59E0B']},             // 15 bachata
+ {g:['#0b2b3d','#02101a'], fx:'pixel',    c:['#34d399','#F59E0B']},             // 16 electro
+ {g:['#215c3a','#0b2b1a'], fx:'sparkle',  c:['#fde68a','#F7F3E8']},             // 17 fósforos
+ {g:['#1c6e5c','#0a2e26'], fx:'cloud',    c:['#c9d6d2']},                       // 18 humito
+ {g:['#2a5c8a','#0f2438'], fx:'confetti', c:['#F59E0B','#f472b6','#7FB89A']},   // 19 de la mano
+ {g:['#3d1208','#160602'], fx:'beam',     c:['#F59E0B']},                       // 20 señor fuego
+ {g:['#3d2f08','#171102'], fx:'confetti', c:['#F59E0B','#F7F3E8','#f472b6']},   // 21 ranking
+ {g:['#7a4520','#20120a'], fx:'firefly',  c:['#ffe9b3']},                       // 22 arbolito
+];
+
+const $ = id => document.getElementById(id);
+const audio = $('audio');
+let current = 0, rehearsal = false;
+let rehearsalStart = null, rehearsalElapsed = 0, rehearsalPlaying = false;
+let syncMode = false, syncTimes = [], syncIdx = 0;
+let lineEls = [];
+
+const fmt = s => { s = Math.max(0, Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(t._h); t._h = setTimeout(()=>t.style.opacity=0, 2600); }
+
+/* Tiempos guardados de sesiones anteriores */
+try{
+  const saved = JSON.parse(localStorage.getItem('cancionero_times') || '{}');
+  SONGS.forEach(s => { if (saved[s.n]) s.times = saved[s.n]; });
+}catch(e){}
+
+/* ---------- Playlist ---------- */
+function buildSidebar(){
+  const sb = $('sidebar');
+  sb.innerHTML = '<h1>Cancionero de Prevención</h1><p class="sub">22 canciones · haz clic para cantar</p>';
+  SONGS.forEach((s, i) => {
+    const ics = (s.file?'<span class="ic">♪</span>':'') + (s.bg?'<span class="ic">🖼</span>':'') + (s.times?'<span class="ic">⏱</span>':'');
+    const div = document.createElement('div');
+    div.className = 'track' + (i === current ? ' active' : '');
+    div.innerHTML = `<div class="num">${String(s.n).padStart(2,'0')}</div>
+      <div class="info"><div class="t">${s.title}</div><div class="s">${s.style}</div></div>
+      <div class="d">${ics}<br>${fmt(s.dur/1000)}</div>`;
+    div.onclick = () => load(i, true);
+    sb.appendChild(div);
+  });
+}
+
+/* ---------- Letra ---------- */
+function buildLyrics(s){
+  const el = $('lyrics');
+  let html = `<div class="songtitle">${s.title}</div><div class="songstyle">${s.style}</div>`;
+  s.lyrics.split('\n\n').forEach(block => {
+    block.split('\n').forEach((line, li) => {
+      if (li === 0 && line.startsWith('[') && line.trim().endsWith(']'))
+        html += `<div class="tag">${line}</div>`;
+      else html += `<div class="line">${line || '&nbsp;'}</div>`;
+    });
+    html += '<div style="height:22px"></div>';
+  });
+  el.innerHTML = html;
+  el.classList.toggle('synced', !!s.times && !syncMode);
+  lineEls = [...el.querySelectorAll('.line')].filter(d => d.textContent.trim() !== '');
+  el.style.transform = 'translateX(-50%) translateY(0px)';
+}
+
+/* ---------- Fondo ---------- */
+function applyTheme(i){
+  const th = THEMES[i] || THEMES[0];
+  const s = SONGS[i];
+  const bm = $('bgmedia');
+  bm.innerHTML = '';
+  if (s.bg){
+    if (s.bgType === 'video'){
+      const v = document.createElement('video');
+      v.src = s.bg; v.muted = true; v.loop = true; v.autoplay = true; v.playsInline = true;
+      bm.appendChild(v);
+    } else {
+      const im = document.createElement('img'); im.src = s.bg; bm.appendChild(im);
+    }
+    bm.style.background = 'none';
+  } else {
+    bm.style.background = `linear-gradient(180deg, ${th.g[0]} 0%, ${th.g[1]} 100%)`;
+  }
+  initFx(th);
+}
+
+/* ---------- Partículas ---------- */
+let fxCfg = null, parts = [];
+const fxc = $('fx'), ctx = fxc.getContext('2d');
+function sizeFx(){ fxc.width = fxc.clientWidth = $('stage').clientWidth; fxc.height = fxc.clientHeight = $('stage').clientHeight; }
+window.addEventListener('resize', sizeFx);
+function rnd(a,b){ return a + Math.random()*(b-a); }
+function initFx(th){
+  fxCfg = th; parts = [];
+  const N = {rain:110, leaf:26, note:20, confetti:60, sparkle:50, beam:5, rise:45, firefly:30, heart:16, pixel:40, snow:60, cloud:7}[th.fx] || 30;
+  for (let i=0;i<N;i++) parts.push(newPart(th, true));
+}
+function newPart(th, anywhere){
+  const W = fxc.width, H = fxc.height;
+  const col = th.c[Math.floor(Math.random()*th.c.length)];
+  const y0 = anywhere ? rnd(0,H) : -20;
+  switch(th.fx){
+    case 'rain':    return {x:rnd(0,W), y:anywhere?rnd(0,H):-30, vy:rnd(9,14), vx:-1.2, l:rnd(10,22), col};
+    case 'leaf':    return {x:rnd(0,W), y:y0, vy:rnd(.5,1.4), vx:rnd(-.6,.6), r:rnd(4,8), a:rnd(0,6.3), va:rnd(-.04,.04), col};
+    case 'note':    return {x:rnd(0,W), y:anywhere?rnd(0,H):H+20, vy:-rnd(.4,1), ch:['♪','♫'][Math.floor(Math.random()*2)], sz:rnd(16,30), col, al:rnd(.25,.7)};
+    case 'confetti':return {x:rnd(0,W), y:y0, vy:rnd(1,2.4), vx:rnd(-.8,.8), w:rnd(4,8), h:rnd(6,12), a:rnd(0,6.3), va:rnd(-.1,.1), col};
+    case 'sparkle': return {x:rnd(0,W), y:rnd(0,H), t:rnd(0,6.3), sp:rnd(.02,.06), r:rnd(1,3), col};
+    case 'beam':    return {x:rnd(0,W), a:rnd(-0.5,0.5), va:rnd(-.002,.002), w:rnd(60,140), al:rnd(.03,.07), col};
+    case 'rise':    return {x:rnd(0,W), y:anywhere?rnd(0,H):H+10, vy:-rnd(.3,.9), r:rnd(1.5,3.5), col, al:rnd(.3,.8)};
+    case 'firefly': return {x:rnd(0,W), y:rnd(0,H), vx:rnd(-.4,.4), vy:rnd(-.3,.3), t:rnd(0,6.3), sp:rnd(.03,.08), r:rnd(1.5,3), col};
+    case 'heart':   return {x:rnd(0,W), y:anywhere?rnd(0,H):H+20, vy:-rnd(.3,.8), sz:rnd(12,22), col, al:rnd(.3,.7), sw:rnd(0,6.3)};
+    case 'pixel':   return {x:Math.floor(rnd(0,W/22))*22, y:anywhere?rnd(0,H):H+10, vy:-rnd(.8,2), s:rnd(3,6), col, al:rnd(.3,.9)};
+    case 'snow':    return {x:rnd(0,W), y:y0, vy:rnd(.4,1.1), vx:rnd(-.3,.3), r:rnd(1,3), col, sw:rnd(0,6.3)};
+    case 'cloud':   return {x:anywhere?rnd(-W*.2,W):-300, y:rnd(0,H*.6), vx:rnd(.15,.4), r:rnd(60,140), col, al:rnd(.05,.12)};
+  }
+}
+function drawFx(){
+  if (!fxCfg) return;
+  const W = fxc.width, H = fxc.height;
+  ctx.clearRect(0,0,W,H);
+  for (let i=0;i<parts.length;i++){
+    let p = parts[i];
+    switch(fxCfg.fx){
+      case 'rain':
+        p.x += p.vx; p.y += p.vy;
+        ctx.strokeStyle = p.col; ctx.globalAlpha = .25; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+p.vx*1.4, p.y+p.l); ctx.stroke();
+        if (p.y > H) parts[i] = newPart(fxCfg); break;
+      case 'leaf':
+        p.x += p.vx + Math.sin(p.a)*0.5; p.y += p.vy; p.a += p.va;
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a); ctx.globalAlpha = .55; ctx.fillStyle = p.col;
+        ctx.beginPath(); ctx.ellipse(0,0,p.r,p.r*.45,0,0,6.3); ctx.fill(); ctx.restore();
+        if (p.y > H+20) parts[i] = newPart(fxCfg); break;
+      case 'note':
+        p.y += p.vy; ctx.globalAlpha = p.al; ctx.fillStyle = p.col; ctx.font = p.sz+'px serif';
+        ctx.fillText(p.ch, p.x, p.y);
+        if (p.y < -30) parts[i] = newPart(fxCfg); break;
+      case 'confetti':
+        p.x += p.vx; p.y += p.vy; p.a += p.va;
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a); ctx.globalAlpha = .8; ctx.fillStyle = p.col;
+        ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+        if (p.y > H+20) parts[i] = newPart(fxCfg); break;
+      case 'sparkle':
+        p.t += p.sp; const al = (Math.sin(p.t)+1)/2;
+        ctx.globalAlpha = al*.9; ctx.fillStyle = p.col;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.3); ctx.fill(); break;
+      case 'beam':
+        p.a += p.va;
+        ctx.save(); ctx.translate(p.x, H+40); ctx.rotate(p.a); ctx.globalAlpha = p.al; ctx.fillStyle = p.col;
+        ctx.beginPath(); ctx.moveTo(-p.w/2,0); ctx.lineTo(p.w/2,0); ctx.lineTo(p.w*1.6,-H*1.5); ctx.lineTo(-p.w*1.6,-H*1.5); ctx.fill(); ctx.restore(); break;
+      case 'rise':
+        p.y += p.vy; ctx.globalAlpha = p.al; ctx.fillStyle = p.col;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.3); ctx.fill();
+        if (p.y < -10) parts[i] = newPart(fxCfg); break;
+      case 'firefly':
+        p.x += p.vx; p.y += p.vy; p.t += p.sp;
+        if (p.x<0||p.x>W) p.vx*=-1; if (p.y<0||p.y>H) p.vy*=-1;
+        const fal = (Math.sin(p.t)+1)/2;
+        ctx.globalAlpha = fal*.9; ctx.fillStyle = p.col; ctx.shadowColor = p.col; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.3); ctx.fill(); ctx.shadowBlur = 0; break;
+      case 'heart':
+        p.y += p.vy; p.sw += .03;
+        ctx.globalAlpha = p.al; ctx.fillStyle = p.col; ctx.font = p.sz+'px serif';
+        ctx.fillText('♥', p.x + Math.sin(p.sw)*8, p.y);
+        if (p.y < -30) parts[i] = newPart(fxCfg); break;
+      case 'pixel':
+        p.y += p.vy; ctx.globalAlpha = p.al; ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, p.s, p.s);
+        if (p.y < -10) parts[i] = newPart(fxCfg); break;
+      case 'snow':
+        p.sw += .02; p.x += p.vx + Math.sin(p.sw)*.4; p.y += p.vy;
+        ctx.globalAlpha = .7; ctx.fillStyle = p.col;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.3); ctx.fill();
+        if (p.y > H) parts[i] = newPart(fxCfg); break;
+      case 'cloud':
+        p.x += p.vx; ctx.globalAlpha = p.al; ctx.fillStyle = p.col;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.3); ctx.arc(p.x+p.r*.8,p.y+p.r*.2,p.r*.7,0,6.3); ctx.fill();
+        if (p.x - p.r > W) parts[i] = newPart(fxCfg); break;
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- Carga de canción ---------- */
+function load(i, autoplay){
+  if (syncMode) endSync(false);
+  current = (i + SONGS.length) % SONGS.length;
+  const s = SONGS[current];
+  $('bignum').textContent = String(s.n).padStart(2,'0');
+  buildLyrics(s);
+  applyTheme(current);
+  buildSidebar();
+  document.querySelector('#nowplaying .t').textContent = String(s.n).padStart(2,'0')+' · '+s.title;
+  document.querySelector('#nowplaying .s').textContent = s.style + (s.times ? ' · karaoke exacto' : '') + (s.file ? '' : ' · sin audio');
+  $('timetotal').textContent = fmt(s.dur/1000);
+  rehearsalElapsed = 0; rehearsalPlaying = false; rehearsalStart = null;
+  if (s.file){ audio.src = s.url; if (autoplay) audio.play().catch(()=>{}); }
+  else { audio.removeAttribute('src'); audio.load(); if (autoplay && rehearsal) toggleRehearsal(true); }
+  updatePlayBtn();
+}
+
+/* Duración real cuando el MP3 entrega sus metadatos */
+audio.addEventListener('loadedmetadata', () => {
+  if (isFinite(audio.duration) && audio.duration > 0){
+    SONGS[current].dur = Math.round(audio.duration*1000);
+    $('timetotal').textContent = fmt(audio.duration);
+    buildSidebar();
+  }
+});
+
+/* ---------- Motor de tiempo ---------- */
+function currentTime(){
+  const s = SONGS[current];
+  if (s.file) return audio.currentTime;
+  if (!rehearsalPlaying) return rehearsalElapsed;
+  return rehearsalElapsed + (performance.now()-rehearsalStart)/1000;
+}
+function duration(){
+  const s = SONGS[current];
+  if (s.file && isFinite(audio.duration) && audio.duration > 0) return audio.duration;
+  return s.dur/1000;
+}
+function tick(){
+  const s = SONGS[current];
+  const t = currentTime() + Number($('offset').value);
+  const d = duration();
+  const stage = $('stage'), ly = $('lyrics');
+  if (s.times && !syncMode && lineEls.length){
+    /* Karaoke exacto: centrar y resaltar la línea activa */
+    let idx = -1;
+    for (let k=0;k<s.times.length && k<lineEls.length;k++){ if (t >= s.times[k]) idx = k; else break; }
+    lineEls.forEach((el,k) => { el.classList.toggle('active', k===idx); el.classList.toggle('done', k<idx); });
+    ly.classList.add('smooth');
+    let y;
+    if (idx < 0) y = stage.clientHeight*0.55;
+    else y = stage.clientHeight*0.42 - (lineEls[idx].offsetTop + lineEls[idx].offsetHeight/2);
+    ly.style.transform = `translateX(-50%) translateY(${y}px)`;
+  } else {
+    /* Desplazamiento proporcional continuo */
+    ly.classList.remove('smooth');
+    const total = ly.scrollHeight + stage.clientHeight;
+    const y = stage.clientHeight - (Math.min(Math.max(t,0), d)/d)*total;
+    ly.style.transform = `translateX(-50%) translateY(${y}px)`;
+  }
+  $('time').textContent = fmt(currentTime());
+  $('bar').style.width = (Math.min(currentTime()/d,1)*100)+'%';
+  if (!s.file && rehearsalPlaying && currentTime() >= d) next();
+  drawFx();
+  requestAnimationFrame(tick);
+}
+
+/* ---------- Controles ---------- */
+function playing(){ const s = SONGS[current]; return s.file ? (!audio.paused && !audio.ended) : rehearsalPlaying; }
+function updatePlayBtn(){ $('playBtn').textContent = playing() ? '⏸' : '▶'; }
+function toggleRehearsal(on){
+  if (on === undefined) on = !rehearsalPlaying;
+  if (on){ rehearsalStart = performance.now(); rehearsalPlaying = true; }
+  else { rehearsalElapsed = currentTime(); rehearsalPlaying = false; }
+  updatePlayBtn();
+}
+$('playBtn').onclick = () => { const s = SONGS[current]; if (s.file){ audio.paused ? audio.play() : audio.pause(); } else toggleRehearsal(); };
+function next(){ load(current+1, playing() || rehearsal); }
+$('nextBtn').onclick = () => next();
+$('prevBtn').onclick = () => load(current-1, playing());
+audio.addEventListener('play', updatePlayBtn);
+audio.addEventListener('pause', updatePlayBtn);
+audio.addEventListener('ended', () => { if (!syncMode) next(); });
+$('progress').onclick = e => {
+  const frac = (e.clientX - e.currentTarget.getBoundingClientRect().left)/e.currentTarget.clientWidth;
+  const s = SONGS[current];
+  if (s.file) audio.currentTime = frac*duration();
+  else { rehearsalElapsed = frac*duration(); if (rehearsalPlaying) rehearsalStart = performance.now(); }
+};
+$('offset').oninput = () => $('offsetVal').textContent = $('offset').value+'s';
+$('fsBtn').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+$('toggle').onclick = () => $('sidebar').classList.toggle('hidden');
+
+/* ---------- Sincronización línea a línea ---------- */
+function startSync(){
+  const s = SONGS[current];
+  if (!s.file){ toast('Carga primero el MP3 de esta canción para sincronizarla'); return; }
+  syncMode = true; syncTimes = []; syncIdx = 0;
+  $('lyrics').classList.remove('synced');
+  $('syncbar').classList.add('on');
+  $('syncBtn').classList.add('rec'); $('syncBtn').textContent = '⏹ Grabando…';
+  updateSyncBar();
+  audio.currentTime = 0; audio.play();
+  toast('Presiona Enter al iniciar cada línea cantada');
+}
+function updateSyncBar(){
+  const nxt = lineEls[syncIdx];
+  document.querySelector('#syncbar .next').textContent =
+    nxt ? `Próxima línea (${syncIdx+1}/${lineEls.length}): “${nxt.textContent.trim().slice(0,70)}”` : '¡Última línea marcada!';
+}
+function markLine(){
+  if (!syncMode || syncIdx >= lineEls.length) return;
+  syncTimes.push(Number((audio.currentTime).toFixed(2)));
+  lineEls[syncIdx].classList.add('active');
+  if (syncIdx > 0) lineEls[syncIdx-1].classList.remove('active');
+  /* mantener visible la zona de trabajo */
+  const stage = $('stage'), ly = $('lyrics');
+  ly.classList.add('smooth');
+  const el = lineEls[syncIdx];
+  ly.style.transform = `translateX(-50%) translateY(${stage.clientHeight*0.42 - (el.offsetTop + el.offsetHeight/2)}px)`;
+  syncIdx++;
+  if (syncIdx >= lineEls.length){ endSync(true); } else updateSyncBar();
+}
+function endSync(saveIt){
+  syncMode = false;
+  $('syncbar').classList.remove('on');
+  $('syncBtn').classList.remove('rec'); $('syncBtn').textContent = '⏱ Sincronizar';
+  if (saveIt && syncTimes.length){
+    SONGS[current].times = syncTimes.slice();
+    persistTimes();
+    toast(`¡Listo! ${syncTimes.length} líneas sincronizadas — karaoke exacto activado`);
+  }
+  buildLyrics(SONGS[current]);
+  buildSidebar();
+}
+function persistTimes(){
+  const all = {};
+  SONGS.forEach(s => { if (s.times) all[s.n] = s.times; });
+  try{ localStorage.setItem('cancionero_times', JSON.stringify(all)); }catch(e){}
+}
+$('syncBtn').onclick = () => syncMode ? endSync(true) : startSync();
+$('syncbar').onclick = () => markLine();
+$('exportBtn').onclick = () => {
+  const all = {};
+  SONGS.forEach(s => { if (s.times) all[s.n] = s.times; });
+  if (!Object.keys(all).length){ toast('Aún no hay tiempos marcados'); return; }
+  const blob = new Blob([JSON.stringify(all, null, 1)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'cancionero_tiempos.json'; a.click();
+  toast('Tiempos exportados: compártelos junto al HTML');
+};
+document.addEventListener('keydown', e => {
+  if (syncMode){
+    if (e.code === 'Enter'){ e.preventDefault(); markLine(); return; }
+    if (e.code === 'Escape'){ endSync(false); toast('Sincronización cancelada'); return; }
+  }
+  if (e.code === 'Space' && e.target.tagName !== 'INPUT'){ e.preventDefault(); $('playBtn').onclick(); }
+  if (e.code === 'ArrowRight' && e.ctrlKey) next();
+  if (e.code === 'ArrowLeft' && e.ctrlKey) load(current-1, playing());
+});
+
+/* ---------- Asignación de archivos ---------- */
+function assignFiles(files){
+  let nAudio = 0, nMedia = 0;
+  for (const f of files){
+    const isAudio = f.type.startsWith('audio') || /\.(mp3|m4a|wav|ogg)$/i.test(f.name);
+    const isImg = f.type.startsWith('image') || /\.(png|jpe?g|webp|gif)$/i.test(f.name);
+    const isVid = f.type.startsWith('video') || /\.(mp4|webm|mov)$/i.test(f.name);
+    if (f.name.endsWith('.json')){
+      f.text().then(txt => {
+        try{
+          const all = JSON.parse(txt);
+          let c = 0;
+          SONGS.forEach(s => { if (all[s.n] && Array.isArray(all[s.n])){ s.times = all[s.n]; c++; } });
+          persistTimes(); buildSidebar(); buildLyrics(SONGS[current]);
+          toast(`Tiempos importados para ${c} canciones`);
+        }catch(e){ toast('El JSON de tiempos no es válido'); }
+      });
+      continue;
+    }
+    if (!isAudio && !isImg && !isVid) continue;
+    const fname = norm(f.name);
+    let target = null;
+    const mnum = f.name.match(/^\s*0*(\d{1,2})\b/);
+    if (mnum){ const n = parseInt(mnum[1]); if (n>=1 && n<=SONGS.length) target = SONGS[n-1]; }
+    if (!target) target = SONGS.find(s => fname.includes(norm(s.title)));
+    if (!target) continue;
+    const url = URL.createObjectURL(f);
+    if (isAudio){ if (target.url) URL.revokeObjectURL(target.url); target.file = f.name; target.url = url; nAudio++; }
+    else { if (target.bg) URL.revokeObjectURL(target.bg); target.bg = url; target.bgType = isVid ? 'video' : 'image'; nMedia++; }
+  }
+  buildSidebar(); load(current, false);
+  if (nAudio+nMedia > 0){
+    $('dropzone').classList.add('hidden');
+    toast(`Cargados: ${nAudio} audios, ${nMedia} fondos`);
+  }
+}
+$('pickBtn').onclick = () => $('fileInput').click();
+$('fileInput').onchange = e => assignFiles(e.target.files);
+$('skipBtn').onclick = () => { rehearsal = true; $('dropzone').classList.add('hidden'); load(0, false); };
+const dz = $('dropzone');
+['dragenter','dragover'].forEach(ev => document.body.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('hidden'); dz.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+dz.addEventListener('drop', e => assignFiles(e.dataTransfer.files));
+
+/* ---------- Inicio ---------- */
+sizeFx();
+buildSidebar();
+load(0, false);
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
