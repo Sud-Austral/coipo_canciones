@@ -1,80 +1,76 @@
 [ti:La Patrulla del Bosque]
 [by:sincronizar.py]
 
-[00:02.13]¡Atención, atención!
-[00:02.74]Se busca gente valiente...
-[00:04.86]¿Tú? ¡Sí, TÚ!
-[00:08.10]¡Bienvenido a la Patrulla del Bosque!
-[00:09.09]Tengo una misión secreta,
-[00:12.59]
-[00:30.71]soy agente forestal,
-[00:34.21]
-[00:45.28]cuido árboles y bichitos,
-[00:48.93]¡soy un héroe natural!
-[00:52.43]
-[01:17.59]No necesito una capa,
-[01:20.90]
-[01:24.95]ni tampoco superpoder,
-[01:29.01]con mis ojos bien abiertos
-[01:30.27]yo protejo todo el mes.
-[01:33.77]
-[01:43.17]¿Y qué hace la patrulla?
-[01:46.60]
-[01:50.80](¡PRE-VE-NIR!)
-[01:52.27]¿Y cómo lo hacemos?
-[01:53.90](¡ASÍ, ASÍ!)
-[01:55.23]¡Somos la Patrulla del Bosque!
-[01:57.76](¡pum, pum, pum!)
-[01:59.27]Cuidamos los árboles del monte
-[02:00.97](¡tú, tú, tú!)
-[02:03.93]Si veo humo yo aviso a un grande,
-[02:04.53]¡y nunca nunca juego con fuego!
-[02:08.17]¡La Patrulla del Bosque llegó!
-[02:09.02](¡ooooh!)
-[02:09.87]En mi casa soy inspector,
-[02:13.37]
-[02:24.27]reviso todo el lugar:
-[02:28.09]"¡Papá, ese pasto está largo,
-[02:31.59]
-[02:41.65]lo tienes que cortar!"
-[02:42.35]"¡Mamá, guarda bien los fósforos,
-[02:42.92]que no los pueda alcanzar!"
-[02:43.77]Los grandes también aprenden
-[02:47.27]
-[03:00.93]cuando un niño sabe más.
-[03:03.26]¿Y qué hace la patrulla?
-[03:04.70](¡PRE-VE-NIR!)
-[03:07.10]
-[03:10.04]¿Y quién nos enseña?
-[03:12.16](¡EL GUARDA-BOSQUES, SÍ!)
-[03:14.46]¡Somos la Patrulla del Bosque!
-[03:14.86](¡pum, pum, pum!)
-[03:15.26]Cuidamos los árboles del monte
-[03:15.66](¡tú, tú, tú!)
-[03:16.06]Si veo humo yo aviso a un grande,
-[03:16.46]¡y nunca nunca juego con fuego!
-[03:16.86]¡La Patrulla del Bosque llegó!
-[03:17.26](¡ooooh!)
-[03:17.66]Manos arriba... ¡como un árbol gigante!
-[03:18.06]Muevo mis ramas... ¡el viento va adelante!
-[03:18.46]Ahora chiquitito... ¡como una semilla!
-[03:18.86]¡Y crezco crezco crezco... qué maravilla!
-[03:19.26]El bosque se demora años en crecer,
-[03:19.66]¡por eso lo cuidamos, lo vamos a proteger!
-[03:20.06]El zorro me lo agradece,
-[03:20.46]el cóndor me vio pasar,
-[03:20.86]el copihue está contento
-[03:21.26]y el pudú se puso a bailar.
-[03:21.66]Porque cuando el bosque vive,
-[03:22.06]¡vivimos todos los demás!
-[03:22.46]¡Somos la Patrulla del Bosque!
-[03:22.86](¡pum, pum, pum!)
-[03:23.26]Cuidamos los árboles del monte
-[03:23.66](¡tú, tú, tú!)
-[03:24.06]Si veo humo yo aviso a un grande,
-[03:24.46]¡y nunca nunca juego con fuego!
-[03:24.86]¡La Patrulla del Bosque llegó!
-[03:25.26]¡Misión cumplida, patrulla!
-[03:25.66]¿Repetimos mañana?
-[03:26.06]¡SIIIIIÍ!
-[03:14.96]
+[00:01.04]¡Atención, atención!
+[00:04.60]Se busca gente valiente...
+[00:07.97]¿Tú? ¡Sí, TÚ!
+[00:10.10]¡Bienvenido a la Patrulla del Bosque!
+[00:13.60]
+[00:28.59]Tengo una misión secreta,
+[00:30.06]soy agente forestal,
+[00:32.10]cuido árboles y bichitos,
+[00:33.67]¡soy un héroe natural!
+[00:35.37]No necesito una capa,
+[00:36.42]ni tampoco superpoder,
+[00:38.76]con mis ojos bien abiertos
+[00:40.71]yo protejo todo el mes.
+[00:42.15]¿Y qué hace la patrulla?
+[00:44.08](¡PRE-VE-NIR!)
+[00:45.54]¿Y cómo lo hacemos?
+[00:47.66](¡ASÍ, ASÍ!)
+[00:49.35]¡Somos la Patrulla del Bosque!
+[00:51.89](¡pum, pum, pum!)
+[00:53.01]Cuidamos los árboles del monte
+[00:56.98](¡tú, tú, tú!)
+[00:57.38]Si veo humo yo aviso a un grande,
+[00:59.10]¡y nunca nunca juego con fuego!
+[01:03.34]¡La Patrulla del Bosque llegó!
+[01:07.31](¡ooooh!)
+[01:08.21]En mi casa soy inspector,
+[01:10.33]reviso todo el lugar:
+[01:12.07]"¡Papá, ese pasto está largo,
+[01:13.34]lo tienes que cortar!"
+[01:15.50]"¡Mamá, guarda bien los fósforos,
+[01:16.47]que no los pueda alcanzar!"
+[01:18.44]Los grandes también aprenden
+[01:20.16]cuando un niño sabe más.
+[01:22.16]¿Y qué hace la patrulla?
+[01:23.94](¡PRE-VE-NIR!)
+[01:24.95]¿Y quién nos enseña?
+[01:27.07](¡EL GUARDA-BOSQUES, SÍ!)
+[01:29.19]¡Somos la Patrulla del Bosque!
+[01:31.56](¡pum, pum, pum!)
+[01:32.58]Cuidamos los árboles del monte
+[01:36.39](¡tú, tú, tú!)
+[01:36.79]Si veo humo yo aviso a un grande,
+[01:38.80]¡y nunca nunca juego con fuego!
+[01:42.96]¡La Patrulla del Bosque llegó!
+[01:46.31](¡ooooh!)
+[01:48.68]Manos arriba... ¡como un árbol gigante!
+[01:52.07]Muevo mis ramas... ¡el viento va adelante!
+[01:55.22]Ahora chiquitito... ¡como una semilla!
+[01:58.43]¡Y crezco crezco crezco... qué maravilla!
+[02:01.20]
+[02:04.59]El bosque se demora años en crecer,
+[02:08.17]¡por eso lo cuidamos, lo vamos a proteger!
+[02:11.03]
+[02:14.53]El zorro me lo agradece,
+[02:15.92]el cóndor me vio pasar,
+[02:17.62]el copihue está contento
+[02:19.19]y el pudú se puso a bailar.
+[02:20.88]Porque cuando el bosque vive,
+[02:24.70]¡vivimos todos los demás!
+[02:28.32]¡Somos la Patrulla del Bosque!
+[02:32.03](¡pum, pum, pum!)
+[02:32.45]Cuidamos los árboles del monte
+[02:35.54]
+[02:39.31](¡tú, tú, tú!)
+[02:42.81]
+[02:53.51]Si veo humo yo aviso a un grande,
+[02:56.48]¡y nunca nunca juego con fuego!
+[03:00.72]¡La Patrulla del Bosque llegó!
+[03:03.20]
+[03:06.23]¡Misión cumplida, patrulla!
+[03:08.77]¿Repetimos mañana?
+[03:10.89]¡SIIIIIÍ!
+[03:14.89]
