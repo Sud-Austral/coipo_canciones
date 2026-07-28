@@ -230,7 +230,7 @@ input[type="range"]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;b
 .pop__row{display:flex;align-items:center;gap:var(--s2)}
 .pop__val{font-size:var(--fs-sm);font-variant-numeric:tabular-nums;min-width:52px;text-align:right}
 .pop__reset{
-  margin-top:var(--s3);width:100%;min-height:36px;border:1px solid var(--border);
+  margin-top:var(--s3);width:100%;min-height:44px;border:1px solid var(--border);
   border-radius:var(--r-sm);font-size:var(--fs-sm);color:var(--text-2);
   transition:background var(--t-fast),color var(--t-fast);
 }
@@ -261,7 +261,7 @@ input[type="range"]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;b
   .stage__content{padding:var(--s8) var(--s4)}
 }
 @media (max-width:560px){
-  .controls{gap:var(--s1);padding-left:var(--s2);padding-right:var(--s2);justify-content:center}
+  .controls{gap:var(--s2);padding-left:var(--s2);padding-right:var(--s2);justify-content:center}
   .time{min-width:40px}
   .seek{flex:1 1 100%;order:10;min-width:0}
 }
@@ -309,7 +309,7 @@ input[type="range"]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;b
     </div>
   </main>
 
-  <footer class="controls" id="controles" aria-label="Controles de reproducción">
+  <footer class="controls" id="controles" tabindex="-1" aria-label="Controles de reproducción">
     <button class="iconbtn" id="btnPanel" aria-label="Mostrar lista de canciones" aria-expanded="false" aria-controls="panel">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
     </button>
@@ -457,6 +457,9 @@ function load(i, autoplay){
   $('npTitle').textContent = s.title;
   $('npMeta').textContent = s.style;
   $('tTot').textContent = fmt(s.dur/1000);
+  $('seek').value = 0;
+  $('seek').style.setProperty('--p', '0%');
+  $('seek').setAttribute('aria-valuetext', '0:00 de ' + fmt(s.dur/1000));
   $('secLabel').textContent = '';
   $('prevLine').textContent = '';
   $('nextLine').textContent = s.lines[0] ? s.lines[0].text : '';
@@ -632,9 +635,11 @@ renderOffset();
 const btnOffset = $('btnOffset'), popOffset = $('popOffset');
 function togglePop(force){
   const open = force !== undefined ? force : popOffset.hidden;
+  const wasOpen = !popOffset.hidden;
   popOffset.hidden = !open;
   btnOffset.setAttribute('aria-expanded', String(open));
   if (open) offEl.focus();
+  else if (wasOpen) btnOffset.focus();
 }
 btnOffset.addEventListener('click', () => togglePop());
 document.addEventListener('click', e => {
@@ -647,11 +652,15 @@ function openDrawer(){
   panel.classList.add('is-open');
   drawerScrim.classList.add('is-on');
   btnPanel.setAttribute('aria-expanded', 'true');
+  const act = document.querySelector('.track[aria-current="true"]');
+  if (act) act.focus();
 }
 function closeDrawer(){
+  const wasOpen = panel.classList.contains('is-open');
   panel.classList.remove('is-open');
   drawerScrim.classList.remove('is-on');
   btnPanel.setAttribute('aria-expanded', 'false');
+  if (wasOpen && getComputedStyle(btnPanel).display !== 'none') btnPanel.focus();
 }
 btnPanel.addEventListener('click', () => panel.classList.contains('is-open') ? closeDrawer() : openDrawer());
 drawerScrim.addEventListener('click', closeDrawer);
