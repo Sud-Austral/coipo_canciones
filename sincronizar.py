@@ -22,8 +22,12 @@ Estrategia, en orden de importancia:
 El paso 4 es el más lento y el menos decisivo. Con --rapido se omite: el script
 pide un ancla manual por sección y el resto sale de la estructura.
 """
-import argparse, json, os, re, subprocess, sys, time, unicodedata
+import argparse, importlib.util, json, os, re, shutil, subprocess, sys, time, unicodedata
 from difflib import SequenceMatcher
+
+# Windows + conda: dos runtimes de OpenMP (el MKL de Anaconda y el que trae torch)
+# chocan y abortan demucs con "OMP: Error #15". Este ajuste permite la duplicación.
+os.environ.setdefault('KMP_DUPLICATE_LIB_OK', 'TRUE')
 
 import numpy as np
 from scipy.io import wavfile
@@ -75,10 +79,13 @@ def separar_voz(mp3, tmp):
     r = subprocess.run([sys.executable, '-m', 'demucs', '-n', 'htdemucs', '--two-stems=vocals',
                         '-d', 'cpu', '--segment', '7', '-j', '1',
                         '-o', os.path.join(tmp, 'sep'), mp3],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True,
+                       env={**os.environ, 'KMP_DUPLICATE_LIB_OK': 'TRUE'})
     if not os.path.exists(destino):
         log('  no se pudo separar la voz; se sigue con la mezcla completa')
-        log('  (' + (r.stderr or '').strip().splitlines()[-1][:120] + ')' if r.stderr else '')
+        if r.stderr:
+            for ln in r.stderr.strip().splitlines()[-4:]:
+                log('    ' + ln[:160])
         return None
     return destino
 
@@ -152,21 +159,48 @@ def buscar_repeticion(F, hop, ini, fin, evitar, n=1):
 
 
 # ------------------------------------------------------ 4. anclas por voz
-def anclas_asr(ruta_voz, ruta_mezcla, lineas, prompt):
-    try:
-        from faster_whisper import WhisperModel
-    except ImportError:
-        log('  faster-whisper no está instalado; se omiten las anclas por voz')
+# La transcripción corre en un subproceso con un python configurable: en entornos
+# conda con DLLs en conflicto (ctranslate2 no carga), se usa otro python donde
+# faster-whisper sí funcione (p. ej. el de base). Un crash ahí no mata la corrida.
+HELPER_ASR = '''
+import json, os, re, sys, unicodedata
+os.environ.setdefault('KMP_DUPLICATE_LIB_OK', 'TRUE')
+from faster_whisper import WhisperModel
+
+def norm(s):
+    s = unicodedata.normalize('NFD', s.lower())
+    s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
+    return re.sub(r"[^a-z0-9\\u00f1 ]", ' ', s)
+
+cfg = json.load(open(sys.argv[1], encoding='utf-8'))
+m = WhisperModel('base', device='cpu', compute_type='int8')
+out = []
+for f in cfg['archivos']:
+    for pr in (cfg['prompt'], None):
+        segs, _ = m.transcribe(f, language='es', word_timestamps=True, vad_filter=False,
+                               beam_size=5, temperature=0.0,
+                               condition_on_previous_text=False, initial_prompt=pr)
+        out.append([[norm(w.word).strip(), float(w.start)]
+                    for s in segs for w in (s.words or []) if norm(w.word).strip()])
+json.dump(out, open(sys.argv[2], 'w'))
+'''
+
+def anclas_asr(ruta_voz, ruta_mezcla, lineas, prompt, whisper_python, tmp):
+    archivos = [os.path.abspath(f) for f in [ruta_voz, ruta_mezcla] if f]
+    helper = os.path.join(tmp, 'asr_helper.py')
+    cfg = os.path.join(tmp, 'asr_cfg.json')
+    salida = os.path.join(tmp, 'asr_out.json')
+    open(helper, 'w', encoding='utf-8').write(HELPER_ASR)
+    json.dump({'archivos': archivos, 'prompt': prompt}, open(cfg, 'w', encoding='utf-8'))
+    log('  transcribiendo (%d pasadas; la primera vez descarga el modelo ~75 MB)...' % (len(archivos)*2))
+    r = subprocess.run([whisper_python, helper, cfg, salida], capture_output=True, text=True,
+                       env={**os.environ, 'KMP_DUPLICATE_LIB_OK': 'TRUE'})
+    if r.returncode != 0 or not os.path.exists(salida):
+        log('  el reconocimiento de voz falló; se sigue sin anclas')
+        for ln in (r.stderr or '').strip().splitlines()[-4:]:
+            log('    ' + ln[:160])
         return {}
-    m = WhisperModel('base', device='cpu', compute_type='int8')
-    pasadas = []
-    for f in filter(None, [ruta_voz, ruta_mezcla]):
-        for pr in (prompt, None):
-            segs, _ = m.transcribe(f, language='es', word_timestamps=True, vad_filter=False,
-                                   beam_size=5, temperature=0.0,
-                                   condition_on_previous_text=False, initial_prompt=pr)
-            pasadas.append([(norm(w.word).strip(), float(w.start))
-                            for s in segs for w in (s.words or []) if norm(w.word).strip()])
+    pasadas = json.load(open(salida, encoding='utf-8'))
     palabras, de_linea = [], []
     for i, ln in enumerate(lineas):
         for w in norm(ln).split():
@@ -269,7 +303,8 @@ def a_lrc(marcas, lineas, titulo, dur):
 
 
 # ------------------------------------------------------- una sola canción
-def procesar_cancion(ruta_audio, ruta_letra, ruta_salida, tmp, rapido):
+def procesar_cancion(ruta_audio, ruta_letra, ruta_salida, tmp, rapido, whisper_python=None):
+    whisper_python = whisper_python or sys.executable
     os.makedirs(tmp, exist_ok=True)
     lineas, secciones = leer_letra(ruta_letra)
     titulo = os.path.splitext(os.path.basename(ruta_audio))[0].replace('_', ' ')
@@ -289,7 +324,7 @@ def procesar_cancion(ruta_audio, ruta_letra, ruta_salida, tmp, rapido):
 
     log('[3/5] anclas por reconocimiento de voz')
     prompt = ' '.join(lineas[:12])[:600]
-    anclas = {} if rapido else anclas_asr(voz16, a_wav(mezcla, os.path.join(tmp, 'mez16.wav'), 16000, True), lineas, prompt)
+    anclas = {} if rapido else anclas_asr(voz16, a_wav(mezcla, os.path.join(tmp, 'mez16.wav'), 16000, True), lineas, prompt, whisper_python, tmp)
     log('  %d líneas ancladas' % len(anclas))
 
     log('[4/5] estructura: secciones repetidas')
@@ -376,7 +411,51 @@ def procesar_cancion(ruta_audio, ruta_letra, ruta_salida, tmp, rapido):
     open(lrc, 'w', encoding='utf-8').write(a_lrc(marcas, lineas, titulo, dur))
     log('escrito: %s y %s' % (ruta_salida, lrc))
 
-    return {'titulo': titulo, 'duracion': dur, 'lineas': len(marcas), 'validado_pct': pct}
+    return {'titulo': titulo, 'duracion': dur, 'lineas': len(marcas), 'validado_pct': pct,
+            'voz_separada': voz is not None}
+
+
+# ------------------------------------------------------- chequeo de entorno
+def _python_puede(py, modulo):
+    """True si `py -c "import modulo"` funciona (detecta módulos rotos, no solo ausentes)."""
+    try:
+        r = subprocess.run([py, '-c', 'import ' + modulo], capture_output=True, timeout=180,
+                           env={**os.environ, 'KMP_DUPLICATE_LIB_OK': 'TRUE'})
+        return r.returncode == 0
+    except Exception:
+        return False
+
+def resolver_whisper_python(explicito):
+    """Elige con qué python correr faster-whisper. Devuelve (ruta, aviso o None)."""
+    if explicito:
+        return explicito, None
+    if _python_puede(sys.executable, 'faster_whisper'):
+        return sys.executable, None
+    # en un entorno conda, probar con el python del base (DLLs distintas)
+    sep = os.sep + 'envs' + os.sep
+    if sep in sys.exec_prefix:
+        base = sys.exec_prefix.split(sep)[0]
+        cand = os.path.join(base, 'python.exe') if os.name == 'nt' else os.path.join(base, 'bin', 'python')
+        if os.path.exists(cand) and _python_puede(cand, 'faster_whisper'):
+            return cand, 'faster-whisper no carga en este entorno; se usará el python de base:\n    ' + cand
+    return sys.executable, None
+
+def revisar_entorno(rapido, whisper_python):
+    """Devuelve (fatales, advertencias). Fatal = no se puede procesar nada."""
+    fatales, advertencias = [], []
+    if not shutil.which('ffmpeg'):
+        fatales.append('ffmpeg no está en el PATH (obligatorio).\n'
+                       '    winget install ffmpeg   (y abrir un terminal nuevo)')
+    if importlib.util.find_spec('demucs') is None or importlib.util.find_spec('torch') is None:
+        advertencias.append('demucs/torch no instalados: NO habrá separación de voz y la\n'
+                            '  calidad cae fuerte (en el caso documentado: de 58/58 a 30/58 líneas).\n'
+                            '    pip install demucs\n'
+                            '    pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio')
+    if not rapido and not _python_puede(whisper_python, 'faster_whisper'):
+        advertencias.append('faster-whisper no funciona en %s: sin anclas por reconocimiento de voz.\n'
+                            '    pip install faster-whisper   (o usa --rapido, o --whisper-python RUTA)'
+                            % whisper_python)
+    return fatales, advertencias
 
 
 # ---------------------------------------------------------- modo carpeta
@@ -411,7 +490,21 @@ def barra(actual, total, ancho=28):
     pct = int(100 * actual / total) if total else 100
     return '[%s%s] %d/%d (%d%%)' % ('#'*llenos, '-'*(ancho-llenos), actual, total, pct)
 
-def modo_lote(carpeta_audio, carpeta_letras, carpeta_salida, tmp, rapido, forzar):
+def modo_lote(carpeta_audio, carpeta_letras, carpeta_salida, tmp, rapido, forzar, permitir_degradado,
+              whisper_python):
+    log('revisión del entorno:')
+    fatales, advertencias = revisar_entorno(rapido, whisper_python)
+    for p in fatales:
+        log('  FALTA: ' + p)
+    for p in advertencias:
+        log('  ADVERTENCIA: ' + p)
+    if fatales:
+        sys.exit('\nentorno incompleto: corrige lo anterior antes de procesar el lote')
+    if advertencias and not permitir_degradado:
+        sys.exit('\nel lote correría DEGRADADO. Instala lo que falta, o fuerza con --permitir-degradado')
+    if not advertencias:
+        log('  entorno completo: ffmpeg + demucs/torch' + ('' if rapido else ' + faster-whisper'))
+
     os.makedirs(carpeta_salida, exist_ok=True)
     os.makedirs(tmp, exist_ok=True)
     pares, sin_pareja = emparejar(carpeta_audio, carpeta_letras)
@@ -439,8 +532,14 @@ def modo_lote(carpeta_audio, carpeta_letras, carpeta_salida, tmp, rapido, forzar
         tmp_cancion = os.path.join(tmp, nombre)
         t0 = time.time()
         try:
-            stats = procesar_cancion(ruta_audio, ruta_letra, salida_json, tmp_cancion, rapido)
-            resumen.append((nombre, 'ok', '%.0f%% validado · %.0fs' % (stats['validado_pct'], time.time()-t0)))
+            stats = procesar_cancion(ruta_audio, ruta_letra, salida_json, tmp_cancion, rapido, whisper_python)
+            if not stats['voz_separada']:
+                estado = 'degradada'
+            elif stats['validado_pct'] < 90:
+                estado = 'REVISAR'
+            else:
+                estado = 'ok'
+            resumen.append((nombre, estado, '%.0f%% validado · %.0fs' % (stats['validado_pct'], time.time()-t0)))
         except Exception as e:
             log('  ERROR: %s' % e)
             resumen.append((nombre, 'error', str(e)[:90]))
@@ -453,10 +552,15 @@ def modo_lote(carpeta_audio, carpeta_letras, carpeta_salida, tmp, rapido, forzar
         log('  %-42s %-9s %s' % (nombre, estado, detalle))
     for lf in sin_pareja:
         log('  %-42s %-9s %s' % (os.path.splitext(lf)[0], 'sin audio', ''))
-    ok = sum(1 for _, e, _ in resumen if e == 'ok')
-    saltadas = sum(1 for _, e, _ in resumen if e == 'saltada')
-    errores = sum(1 for _, e, _ in resumen if e == 'error')
-    log('\n%d listas · %d saltadas · %d con error · %d sin audio' % (ok, saltadas, errores, len(sin_pareja)))
+    cuenta = {}
+    for _, e, _ in resumen:
+        cuenta[e] = cuenta.get(e, 0) + 1
+    log('\n%d ok · %d por revisar (<90%%) · %d degradadas (sin separación de voz) · '
+        '%d saltadas · %d con error · %d sin audio'
+        % (cuenta.get('ok', 0), cuenta.get('REVISAR', 0), cuenta.get('degradada', 0),
+           cuenta.get('saltada', 0), cuenta.get('error', 0), len(sin_pareja)))
+    if cuenta.get('REVISAR') or cuenta.get('degradada'):
+        log('regla del método: nada bajo 90%% se entrega sin escucharlo y revisar qué sección falló.')
 
 
 # --------------------------------------------------------------------- main
@@ -472,16 +576,36 @@ def main():
     ap.add_argument('--carpeta-salida', dest='carpeta_salida', default='Marcas',
                      help='carpeta de salida en modo lote (por defecto "Marcas")')
     ap.add_argument('--forzar', action='store_true', help='en modo lote, rehace lo que ya tenga salida')
+    ap.add_argument('--permitir-degradado', dest='permitir_degradado', action='store_true',
+                     help='en modo lote, procesa igual aunque falte demucs (calidad degradada)')
+    ap.add_argument('--whisper-python', dest='whisper_python',
+                     help='python con el que correr faster-whisper (por defecto se autodetecta)')
     a = ap.parse_args()
+
+    whisper_python, aviso = resolver_whisper_python(a.whisper_python)
+    if aviso:
+        log('NOTA: ' + aviso)
 
     if a.carpeta_audio or a.carpeta_letras:
         if not (a.carpeta_audio and a.carpeta_letras):
             sys.exit('--carpeta-audio y --carpeta-letras van siempre juntos')
-        modo_lote(a.carpeta_audio, a.carpeta_letras, a.carpeta_salida, a.tmp, a.rapido, a.forzar)
+        modo_lote(a.carpeta_audio, a.carpeta_letras, a.carpeta_salida, a.tmp, a.rapido, a.forzar,
+                  a.permitir_degradado, whisper_python)
     else:
         if not (a.audio and a.letra):
             sys.exit('faltan argumentos: pasa "audio letra", o usa --carpeta-audio/--carpeta-letras')
-        procesar_cancion(a.audio, a.letra, a.salida, a.tmp, a.rapido)
+        fatales, advertencias = revisar_entorno(a.rapido, whisper_python)
+        for p in fatales:
+            log('FALTA: ' + p)
+        for p in advertencias:
+            log('ADVERTENCIA: ' + p)
+        if fatales:
+            sys.exit('\nentorno incompleto: corrige lo anterior')
+        stats = procesar_cancion(a.audio, a.letra, a.salida, a.tmp, a.rapido, whisper_python)
+        if not stats['voz_separada']:
+            log('\nOJO: esta pasada corrió DEGRADADA (sin separación de voz).')
+        elif stats['validado_pct'] < 90:
+            log('\nOJO: validación bajo 90%% — escuchar y revisar qué sección falló.')
 
 
 if __name__ == '__main__':
