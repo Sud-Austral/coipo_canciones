@@ -1,0 +1,89 @@
+{
+ "global": -0.03,
+ "canciones": {
+  "01_El_Fuego_se_Apaga_en_Invierno.json": {
+   "sesgo": -0.015,
+   "muestras": 30
+  },
+  "02_No_Juegues_con_Fuego.json": {
+   "sesgo": 0.0,
+   "muestras": 24
+  },
+  "03_La_Patrulla_del_Bosque.json": {
+   "sesgo": -0.09,
+   "muestras": 19
+  },
+  "04_Limpia_tu_Terreno.json": {
+   "sesgo": -0.04,
+   "muestras": 25
+  },
+  "05_Llama_al_130.json": {
+   "sesgo": -0.04,
+   "muestras": 14
+  },
+  "06_La_Ruta_de_Escape.json": {
+   "sesgo": -0.03,
+   "muestras": 16
+  },
+  "07_Chao_Chao_Colilla.json": {
+   "sesgo": -0.17,
+   "muestras": 34
+  },
+  "08_Mi_Casa_Preparada.json": {
+   "sesgo": -0.02,
+   "muestras": 18
+  },
+  "09_El_Brigadista.json": {
+   "sesgo": -0.025,
+   "muestras": 32
+  },
+  "10_Todos_Somos_Prevencion.json": {
+   "sesgo": -0.02,
+   "muestras": 43
+  },
+  "11_Alerta_Roja.json": {
+   "sesgo": 0.0,
+   "muestras": 5
+  },
+  "12_Chispa_Traicionera.json": {
+   "sesgo": -0.085,
+   "muestras": 10
+  },
+  "14_Cuenta_Conmigo_Vecino.json": {
+   "sesgo": -0.055,
+   "muestras": 30
+  },
+  "15_Mi_Mascota_Tambien.json": {
+   "sesgo": 0.0,
+   "muestras": 24
+  },
+  "16_Fuente_Oficial.json": {
+   "sesgo": -0.03,
+   "muestras": 21
+  },
+  "17_Los_Fosforos_No_Se_Tocan.json": {
+   "sesgo": -0.04,
+   "muestras": 12
+  },
+  "18_Humito_Gris.json": {
+   "sesgo": -0.04,
+   "muestras": 21
+  },
+  "19_De_la_Mano.json": {
+   "sesgo": -0.03,
+   "muestras": 36
+  },
+  "20_Senor_Fuego.json": {
+   "sesgo": -0.03,
+   "muestras": 25
+  },
+  "21_El_Ranking_del_Descuido.json": {
+   "sesgo": 0.0,
+   "muestras": 28
+  },
+  "22_Dejame_Llegar_a_Viejo.json": {
+   "sesgo": -0.11,
+   "muestras": 37
+  }
+ }
+}

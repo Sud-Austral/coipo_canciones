@@ -1,0 +1,10 @@
+# temporales del pipeline de sincronización (WAV intermedios, pesan cientos de MB)
+.sync_tmp/
+
+# capturas y sondas de verificación
+_*.png
+_*.html
+
+# python
+__pycache__/
+*.pyc

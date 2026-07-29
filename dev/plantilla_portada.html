@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cancionero de Prevención de Incendios · Karaoke</title>
+<meta name="description" content="__TOTAL_CANCIONES__ canciones originales para educar y sensibilizar en prevención de incendios forestales, con karaoke sincronizado para escuelas y comunidades.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Cancionero de Prevención de Incendios · Karaoke">
+<meta property="og:description" content="__TOTAL_CANCIONES__ canciones originales con karaoke sincronizado para educar en prevención de incendios forestales.">
+<meta property="og:image" content="Imagenes/El Fuego Se Apaga en Invierno.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230B241A'/%3E%3Cpath d='M16 5c1.6 4.2-2.4 5.4-2.4 9.1 0 1.6 1 2.7 2.4 2.7s2.4-1.1 2.4-2.7c0-1-.3-1.8-.6-2.6 2.6 1.5 4.2 4 4.2 7 0 3.5-2.7 6.5-6 6.5s-6-3-6-6.5C10 13 12.6 8.6 16 5z' fill='%23F59E0B'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0B241A; --surface:#102C21; --surface-2:#17392C; --border:#2A5641;
+  --text:#F4F1E6; --text-2:#A9C4B7; --accent:#F59E0B; --accent-hover:#FFB52E;
+  --on-accent:#1A1002; --accent-rgb:245 158 11;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px; --s12:48px; --s16:64px;
+  --font-ui:system-ui,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --font-display:Georgia,"Times New Roman",serif;
+  --fs-xs:12px; --fs-sm:14px; --fs-smd:15px; --fs-base:16px; --fs-md:18px; --fs-lg:22px; --fs-xl:28px;
+  --r-sm:6px; --r-md:10px; --r-lg:16px; --r-full:999px;
+  --elev-1:0 1px 3px rgba(0,0,0,.35); --elev-2:0 4px 14px rgba(0,0,0,.45); --elev-3:0 12px 34px rgba(0,0,0,.55);
+  --t-fast:150ms; --t-med:250ms;
+  --ease-out:cubic-bezier(.22,.9,.3,1);
+  --ancho:1180px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:var(--font-ui);font-size:var(--fs-base);line-height:1.6;
+  color:var(--text);background:var(--bg);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+img{max-width:100%;display:block}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:var(--r-sm)}
+.contenedor{max-width:var(--ancho);margin:0 auto;padding:0 var(--s6)}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.skiplink{
+  position:fixed;top:var(--s2);left:50%;transform:translate(-50%,-64px);z-index:100;
+  background:var(--accent);color:var(--on-accent);padding:var(--s2) var(--s4);
+  border-radius:var(--r-full);font-weight:600;font-size:var(--fs-sm);
+  transition:transform var(--t-fast) var(--ease-out);
+}
+.skiplink:focus-visible{transform:translate(-50%,0)}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;isolation:isolate;padding:var(--s16) 0 var(--s12);overflow:hidden}
+.hero__bg{position:absolute;inset:0;z-index:-2}
+.hero__bg img{width:100%;height:100%;object-fit:cover}
+.hero__bg::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(11,36,26,.86) 0%,rgba(11,36,26,.92) 60%,var(--bg) 100%);
+}
+.hero__eyebrow{
+  font-size:var(--fs-xs);font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:var(--s3);
+}
+.hero h1{
+  font-family:var(--font-display);font-weight:700;letter-spacing:-.02em;line-height:1.08;
+  font-size:clamp(34px,6vw,60px);max-width:16ch;
+}
+.hero__bajada{
+  margin-top:var(--s4);max-width:56ch;color:var(--text-2);
+  font-size:clamp(var(--fs-base),2vw,var(--fs-md));
+}
+.hero__acciones{display:flex;flex-wrap:wrap;gap:var(--s3);margin-top:var(--s8)}
+.btn{
+  display:inline-flex;align-items:center;gap:var(--s2);min-height:48px;
+  padding:0 var(--s6);border-radius:var(--r-full);font-weight:600;font-size:var(--fs-smd);
+  text-decoration:none;transition:background var(--t-fast) var(--ease-out),transform var(--t-fast) var(--ease-out);
+}
+.btn svg{width:20px;height:20px;flex:none}
+.btn--primario{background:var(--accent);color:var(--on-accent);box-shadow:var(--elev-1)}
+.btn--primario:hover{background:var(--accent-hover)}
+.btn--secundario{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+.btn--secundario:hover{background:var(--surface)}
+.btn:active{transform:scale(.97)}
+.hero__datos{display:flex;flex-wrap:wrap;gap:var(--s6);margin-top:var(--s8)}
+.dato b{display:block;font-family:var(--font-display);font-size:var(--fs-xl);line-height:1.1;color:var(--accent)}
+.dato span{font-size:var(--fs-sm);color:var(--text-2)}
+
+/* ---------- Secciones ---------- */
+section{padding:var(--s12) 0}
+h2{
+  font-family:var(--font-display);font-size:clamp(24px,3.4vw,34px);
+  line-height:1.2;letter-spacing:-.01em;margin-bottom:var(--s3);
+}
+.seccion__intro{color:var(--text-2);max-width:62ch;margin-bottom:var(--s8)}
+
+.pasos{display:grid;gap:var(--s4);grid-template-columns:repeat(auto-fit,minmax(260px,1fr));list-style:none}
+.paso{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--s5)}
+.paso b{display:flex;align-items:center;gap:var(--s2);font-size:var(--fs-md);margin-bottom:var(--s2)}
+.paso b::before{
+  content:counter(paso);counter-increment:paso;
+  display:grid;place-items:center;width:28px;height:28px;flex:none;
+  background:var(--accent);color:var(--on-accent);border-radius:50%;
+  font-family:var(--font-display);font-size:var(--fs-sm);
+}
+.pasos{counter-reset:paso}
+.paso p{color:var(--text-2);font-size:var(--fs-smd)}
+
+.tabla-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-md);margin-top:var(--s8)}
+table{border-collapse:collapse;width:100%;min-width:420px}
+caption{text-align:left;padding:var(--s4) var(--s5) 0;font-weight:600}
+th,td{text-align:left;padding:var(--s3) var(--s5);border-top:1px solid var(--border);font-size:var(--fs-smd)}
+thead th{border-top:none;color:var(--text-2);font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.1em}
+kbd{
+  font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:var(--fs-xs);
+  background:var(--surface-2);border:1px solid var(--border);border-bottom-width:2px;
+  border-radius:var(--r-sm);padding:3px 7px;color:var(--text);white-space:nowrap;
+}
+
+/* ---------- Repertorio ---------- */
+.repertorio{display:grid;gap:var(--s4);grid-template-columns:repeat(auto-fill,minmax(280px,1fr));list-style:none}
+.carta{position:relative}
+.carta__link{
+  display:block;position:relative;height:100%;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);
+  overflow:hidden;text-decoration:none;color:inherit;
+  transition:border-color var(--t-fast) var(--ease-out),transform var(--t-fast) var(--ease-out),box-shadow var(--t-fast) var(--ease-out);
+}
+.carta__link:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--elev-2)}
+.carta__link:active{transform:translateY(0)}
+/* height:auto es imprescindible: sin él, el atributo height del <img> gana
+   sobre aspect-ratio y la tarjeta se estira a la altura nativa de la imagen */
+.carta__img{width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;background:var(--surface-2)}
+.carta__num{
+  position:absolute;top:var(--s3);left:var(--s3);
+  display:grid;place-items:center;min-width:34px;height:34px;padding:0 var(--s2);
+  background:rgba(6,22,16,.82);border:1px solid var(--border);border-radius:var(--r-full);
+  font-family:var(--font-display);font-weight:700;color:var(--accent);
+  font-variant-numeric:tabular-nums;
+}
+.carta__cuerpo{display:block;padding:var(--s4) var(--s5) var(--s5)}
+.carta__titulo{display:block;font-weight:600;font-size:var(--fs-md);line-height:1.3}
+.carta__meta{display:block;margin-top:var(--s1);font-size:var(--fs-xs);color:var(--accent);font-variant-numeric:tabular-nums}
+.carta__msg{display:block;margin-top:var(--s2);font-size:var(--fs-sm);color:var(--text-2);line-height:1.5}
+
+/* ---------- Sobre / pie ---------- */
+.sobre{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.sobre__grid{display:grid;gap:var(--s8);grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.sobre p{color:var(--text-2);margin-bottom:var(--s3)}
+.enlaces{list-style:none;display:flex;flex-direction:column;gap:var(--s2)}
+.enlaces a{display:inline-flex;align-items:center;gap:var(--s2);min-height:44px}
+footer{padding:var(--s8) 0;color:var(--text-2);font-size:var(--fs-sm)}
+footer .contenedor{display:flex;flex-wrap:wrap;gap:var(--s4);justify-content:space-between}
+
+@media (max-width:600px){
+  .contenedor{padding:0 var(--s4)}
+  .hero{padding-top:var(--s12)}
+  section{padding:var(--s8) 0}
+  .btn{width:100%;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<a class="skiplink" href="#repertorio">Saltar al repertorio</a>
+
+<header class="hero">
+  <div class="hero__bg" aria-hidden="true">
+    <img src="Miniaturas/_hero.webp" alt="" width="1400" height="788" fetchpriority="high">
+  </div>
+  <div class="contenedor">
+    <p class="hero__eyebrow">Prevención de incendios forestales · Chile</p>
+    <h1>Cancionero de Prevención</h1>
+    <p class="hero__bajada">
+      __TOTAL_CANCIONES__ canciones originales para educar y sensibilizar en prevención de incendios
+      forestales, cada una con su letra sincronizada para cantar en escuelas, actos y encuentros
+      comunitarios. Funciona en el navegador, sin instalar nada.
+    </p>
+    <div class="hero__acciones">
+      <a class="btn btn--primario" href="Cancionero_Karaoke_Pro.html">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+        Abrir el karaoke
+      </a>
+      <a class="btn btn--secundario" href="Cancionero_Karaoke_Pro.html?modo=escenario">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Modo escenario
+      </a>
+    </div>
+    <div class="hero__datos">
+      <p class="dato"><b>__TOTAL_CANCIONES__</b><span>canciones originales</span></p>
+      <p class="dato"><b>__TOTAL_MIN__ min</b><span>de repertorio</span></p>
+      <p class="dato"><b>22</b><span>estilos musicales distintos</span></p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="contenedor">
+      <h2>Cómo se usa</h2>
+      <p class="seccion__intro">
+        Pensado para proyectar: conecta el computador al proyector o televisor, elige la canción y
+        canta. La letra se ilumina un instante antes de cantarse, para alcanzar a leerla.
+      </p>
+      <ol class="pasos">
+        <li class="paso">
+          <b>Elige la canción</b>
+          <p>Desde el repertorio de esta página, o en la lista lateral del reproductor. Cada
+          canción trae su audio, su imagen y su letra sincronizada.</p>
+        </li>
+        <li class="paso">
+          <b>Proyecta en modo escenario</b>
+          <p>Oculta la lista y deja solo la imagen y la letra. Los controles se esconden solos
+          mientras suena la música y vuelven al mover el mouse.</p>
+        </li>
+        <li class="paso">
+          <b>Afina si hace falta</b>
+          <p>Si la letra va adelantada o atrasada respecto del audio de tu equipo, ajústala en vivo
+          con las teclas <kbd>[</kbd> y <kbd>]</kbd>. El ajuste queda guardado.</p>
+        </li>
+      </ol>
+
+      <div class="tabla-wrap">
+        <table>
+          <caption>Atajos de teclado del reproductor</caption>
+          <thead>
+            <tr><th scope="col">Tecla</th><th scope="col">Acción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><kbd>Espacio</kbd></td><td>Reproducir o pausar</td></tr>
+            <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Retroceder o avanzar 5 segundos</td></tr>
+            <tr><td><kbd>Ctrl</kbd> + <kbd>←</kbd> <kbd>→</kbd></td><td>Canción anterior o siguiente</td></tr>
+            <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>Ajustar el desfase de la letra en 0,1 s</td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>E</kbd></td><td>Entrar o salir del modo escenario</td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>F</kbd></td><td>Pantalla completa</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Cerrar la lista o los ajustes</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="repertorio">
+    <div class="contenedor">
+      <h2>Las __TOTAL_CANCIONES__ canciones</h2>
+      <p class="seccion__intro">
+        Cada canción trabaja un mensaje preventivo distinto y está pensada para un público
+        definido: desde párvulos hasta cuadrillas de trabajo. Toca cualquiera para abrirla
+        directamente en el karaoke.
+      </p>
+      <ul class="repertorio">
+<!--__TARJETAS__-->
+      </ul>
+    </div>
+  </section>
+
+  <section class="sobre">
+    <div class="contenedor sobre__grid">
+      <div>
+        <h2>Sobre el proyecto</h2>
+        <p>
+          Las letras fueron creadas como textos originales para ser musicalizados en distintos
+          estilos, destinados a campañas de prevención de incendios forestales en establecimientos
+          educacionales y comunidades.
+        </p>
+        <p>
+          La sincronización de cada letra con su audio se hizo con un método propio que combina
+          separación de voz, detección de canto y auto-similitud musical, documentado en el
+          repositorio.
+        </p>
+        <p>
+          Ante humo o fuego en el bosque, el número de emergencia forestal de CONAF es el
+          <strong>130</strong>.
+        </p>
+      </div>
+      <div>
+        <h2>Material</h2>
+        <ul class="enlaces">
+          <li><a href="Cancionero_de_Prevencion_de_Incendios.pdf">Cancionero completo en PDF (las __TOTAL_CANCIONES__ letras)</a></li>
+          <li><a href="Cancionero_Karaoke_Pro.html">Reproductor de karaoke</a></li>
+          <li><a href="METODO_SINCRONIZACION_KARAOKE.md">Método de sincronización letra-audio</a></li>
+          <li><a href="Orden%20Cancionero.txt">Orden sugerido para un espectáculo en vivo</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="contenedor">
+    <p>Cancionero de Prevención de Incendios · __TOTAL_CANCIONES__ canciones · __TOTAL_MIN__ minutos</p>
+    <p>Emergencia forestal: <strong>130</strong></p>
+  </div>
+</footer>
+</body>
+</html>
