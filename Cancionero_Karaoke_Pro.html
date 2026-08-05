@@ -167,9 +167,13 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   font-size:clamp(26px,4.6vw,64px);line-height:1.2;
   min-height:1.3em;
 }
-.line--now .line__base{display:block;color:var(--text-dim);text-shadow:0 2px 14px rgba(0,0,0,.65)}
-.line--now .line__fill{
-  position:absolute;inset:0;color:var(--accent);
+/* Karaoke palabra por palabra: cada palabra lleva su propia capa de relleno.
+   Es lo que permite que una línea partida en dos filas se ilumine en el orden
+   de lectura (un recorte único sobre el bloque pintaría ambas filas a la vez). */
+.w{position:relative;display:inline-block;white-space:pre}
+.w__base{color:var(--text-dim);text-shadow:0 2px 14px rgba(0,0,0,.65)}
+.w__fill{
+  position:absolute;left:0;top:0;white-space:pre;color:var(--accent);
   text-shadow:0 0 28px rgb(var(--accent-rgb)/.35),0 2px 12px rgba(0,0,0,.6);
   clip-path:inset(0 100% 0 0);
 }
@@ -368,10 +372,7 @@ body.escenario.idle .stage__chip{opacity:0;transform:translateY(-8px)}
     <div class="stage__content">
       <p class="eyebrow" id="secLabel"></p>
       <p class="line--ghost" id="prevLine"></p>
-      <div class="line--now" id="nowLine">
-        <span class="line__base" id="nowBase"></span>
-        <span class="line__fill" id="nowFill" aria-hidden="true"></span>
-      </div>
+      <p class="line--now" id="nowLine"></p>
       <p class="line--ghost" id="nextLine"></p>
       <div class="pips" id="pips" aria-hidden="true"><i></i><i></i><i></i></div>
     </div>
@@ -591,18 +592,59 @@ function load(i, autoplay){
   if (next.bg){ const pre = new Image(); pre.src = encodeURI(next.bg); }
 }
 
+/* sílabas del español ≈ grupos vocálicos (los diptongos cuentan como uno);
+   sirven para repartir el tiempo de la línea entre sus palabras */
+function silabas(palabra){
+  const v = palabra.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+                   .match(/[aeiouy]+/g);
+  return v ? v.length : 1;
+}
+
 let nowText = null;
+let palabras = [];     /* [{fill, ini, peso, ult}] */
+let pesoTotal = 0;
+
 function setNow(text, fillPct, isTitle){
   if (nowText !== text){
     nowText = text;
-    $('nowBase').textContent = text;
-    $('nowFill').textContent = text;
-    $('nowLine').style.opacity = isTitle ? .9 : 1;
+    const cont = $('nowLine');
+    cont.textContent = '';
+    palabras = [];
+    pesoTotal = 0;
+    text.split(/(\s+)/).forEach(tok => {
+      if (!tok) return;
+      if (/^\s+$/.test(tok)){ cont.appendChild(document.createTextNode(tok)); return; }
+      const w = document.createElement('span');
+      w.className = 'w';
+      const base = document.createElement('span');
+      base.className = 'w__base';
+      base.textContent = tok;
+      const fill = document.createElement('span');
+      fill.className = 'w__fill';
+      fill.textContent = tok;
+      fill.setAttribute('aria-hidden', 'true');
+      w.append(base, fill);
+      cont.appendChild(w);
+      const peso = silabas(tok);
+      palabras.push({ fill, ini: pesoTotal, peso, ult: -1 });
+      pesoTotal += peso;
+    });
+    cont.style.opacity = isTitle ? .9 : 1;
+    lastFill = -1;
   }
-  const pct = clamp(fillPct*100, 0, 100);
-  if (Math.abs(pct - lastFill) >= .5 || pct === 0 || pct === 100){
-    lastFill = pct;
-    $('nowFill').style.clipPath = 'inset(0 ' + (100 - pct).toFixed(1) + '% 0 0)';
+
+  const pct = clamp(fillPct * 100, 0, 100);
+  if (Math.abs(pct - lastFill) < .4 && pct !== 0 && pct !== 100) return;
+  lastFill = pct;
+
+  /* la posición avanza en "sílabas", no en píxeles: cada palabra se ilumina
+     durante un tramo proporcional a su largo hablado */
+  const pos = (pct / 100) * pesoTotal;
+  for (const w of palabras){
+    const f = clamp((pos - w.ini) / w.peso, 0, 1);
+    if (Math.abs(f - w.ult) < .02 && f !== 0 && f !== 1) continue;
+    w.ult = f;
+    w.fill.style.clipPath = 'inset(0 ' + ((1 - f) * 100).toFixed(1) + '% 0 0)';
   }
 }
 
