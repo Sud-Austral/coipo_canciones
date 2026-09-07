@@ -1,0 +1,187 @@
+# Manifiesto derivado del codigo: obra, insumos de produccion, configuracion y
+# artefactos generados. Las rutas son las que aparecen en la evidencia.
+#
+# Este repositorio no tiene base de datos, ni endpoints, ni variables de
+# entorno. Lo que hay que declarar es la OBRA y los archivos intermedios que
+# se versionaron sin querer.
+
+archivos:
+  - ruta: Cancionero_de_Prevencion_de_Incendios.pdf
+    sha256: "23be0b1af1e017ca62d7b42be9284df229b81ee0935dd4ce1cc4d5e216002105"
+    origen: "[PENDIENTE] quien lo entrego y cuando"
+    contiene_pii: "[VERIFICAR] es una obra literaria, no un archivo de datos. El analizador no lee PDF, asi que no puede reportar patrones ni conteos sobre su contenido. Lo relevante aqui no es dato personal sino titularidad: 22 letras originales publicadas en un repositorio publico sin archivo de licencia"
+    puede_versionarse: true
+    uso: "[INFERIDO] la obra completa: las 22 letras del cancionero, declarada como tal en [README.md]"
+
+  - ruta: letra_ejemplo.txt
+    sha256: "45bdb0bc4e7b061c1fa7b73c3892757e07c98eb8c8cd418b191d373bc23e0e02"
+    origen: "[PENDIENTE] quien lo entrego y cuando"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[INFERIDO] ejemplo del formato de letra que consume [sincronizar.py:46]; el formato esta documentado en [METODO_SINCRONIZACION_KARAOKE.md:132]"
+
+  - ruta: marcas_v2_script.json
+    sha256: "ff7c85b4c0fe3f177accec036c85b6ba3177b3c3ecf95e2e43c73a1f86e13f36"
+    origen: "[PENDIENTE] quien lo entrego y cuando"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[INFERIDO] marcas de tiempo en la segunda version del formato; el nombre declara la version. Que lo distingue de la primera es [PENDIENTE]"
+
+  - ruta: dev/_desfases.json
+    sha256: "227062fe3b910417fc39767f80e7521e64a91a6b97efb5e682459f63b20c162a"
+    origen: "[INFERIDO] lo produce [dev/medir_desfase.py], no lo entrego nadie"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[INFERIDO] desfase medido entre letra y audio por cancion; es el registro de la verificacion descrita en [METODO_SINCRONIZACION_KARAOKE.md:230]"
+
+  - ruta: dev/plantilla_karaoke.html
+    sha256: "cda2a19762af914460fd6c2f946b91052ed9f8287067b42a00ed7141bdc91098"
+    origen: "[PENDIENTE] quien lo entrego y cuando"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[INFERIDO] plantilla del reproductor; la rellena [dev/construir_karaoke.py]. Es la fuente real de [Cancionero_Karaoke_Pro.html], que es generado"
+
+  - ruta: dev/plantilla_portada.html
+    sha256: "d587ccf896346b3eb8a361515b3a08ec2084c500ab1dcad9b1e0007379c5e075"
+    origen: "[PENDIENTE] quien lo entrego y cuando"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[INFERIDO] plantilla de la portada; la rellena [dev/construir_portada.py]. Es la fuente real de [index.html], que es generado"
+
+  - ruta: index.html
+    sha256: "df386dd5a02f240e64700f64a66b7423131db7e39cb5d97a640d4de837d9c0f9"
+    origen: "[INFERIDO] generado por [dev/construir_portada.py]; el [README.md] lo marca como generado"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[INFERIDO] portada del sitio. Editarlo a mano es trabajo que se pierde en la siguiente generacion"
+
+  - ruta: Cancionero_Karaoke_Pro.html
+    sha256: "14fcabfc0eea8d771b430cbcb06b99321c416ac062ff258ef4c05610e4f83d90"
+    origen: "[INFERIDO] generado por [dev/construir_karaoke.py]; el [README.md] lo marca como generado"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[INFERIDO] el reproductor vigente, segun la instruccion de uso del [README.md]"
+
+  - ruta: Cancionero_Karaoke.html
+    sha256: "42c109d2d2c1ca4918ef8676e176684b48a875ba1feaf77fe5f08461b98df7e2"
+    origen: "[PENDIENTE] quien lo entrego y cuando"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[INFERIDO] version anterior del reproductor. Si esta obsoleta, sobra: hoy se publica igual que la vigente. [PENDIENTE] confirmarlo"
+
+  - ruta: Cancionero_Karaoke_Integrado.html
+    sha256: "55c916d49d5f012e7d23749fa3e5d24a561321f5de81f6b1acd35a67c83ca97d"
+    origen: "[PENDIENTE] quien lo entrego y cuando"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[INFERIDO] version anterior del reproductor. Mismo [PENDIENTE] que la anterior"
+
+  - ruta: karaoke_cortafuego.html
+    sha256: "9c1d2d7b092f5e4bf3dc354f815010f9668c3c1583e2dcabfda7cbc302eefe3d"
+    origen: "[PENDIENTE] quien lo entrego y cuando"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[PENDIENTE] cuarto archivo de karaoke del repositorio; ningun elemento de la evidencia declara quien lo usa"
+
+  - ruta: contexto.md
+    sha256: "e8b8a0d576d9c70319cb8aeb324367f913b8e3b993c6153ff0c83e67f5233d33"
+    origen: "[INFERIDO] el propio archivo se declara generado automaticamente a partir del contenido de la carpeta"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[INFERIDO] resumen del proyecto para retomar el trabajo entre sesiones"
+
+  - ruta: METODO_SINCRONIZACION_KARAOKE.md
+    sha256: "fc5acae3c2f51e972836ab8d7997219bb6669ff9ebea3e26b7710cdc93b7bee5"
+    origen: "[PENDIENTE] quien lo entrego y cuando"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[INFERIDO] el metodo de sincronizacion documentado con sus resultados medidos y sus callejones sin salida [METODO_SINCRONIZACION_KARAOKE.md:197]. Es el activo documental mas valioso del repositorio"
+
+  - ruta: INSUMO/ui_ux.md
+    sha256: "efc90c3fb7a23bc185481345cbcf5431ecbe12a3356a95965a3b722b32388fe0"
+    origen: "[PENDIENTE] quien lo entrego y cuando"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: true
+    uso: "[PENDIENTE] unico insumo previo del repositorio; el analizador no reporta su contenido"
+
+  - ruta: .gitignore
+    sha256: "01dd0abec96e18446f6e7e3980d3dd06b8e2ae9c1250a2da64c07c7911f1be54"
+    origen: "[PENDIENTE] quien lo entrego y cuando"
+    contiene_pii: "no"
+    puede_versionarse: true
+    uso: "[INFERIDO] declara ignorados los temporales del pipeline [.gitignore:2] y los compilados de Python [.gitignore:9]. La regla existe y es correcta; lo que falla es que se escribio despues de versionar esos archivos, y .gitignore no des-versiona lo ya trackeado"
+
+  - ruta: __pycache__/sincronizar.cpython-313.pyc
+    sha256: "c6b89215a8ee1d51fa154c78009ea0f10aaf934f4d6f1bdd24af8dc1a944aa4c"
+    origen: "[INFERIDO] compilado que produce el interprete de Python al ejecutar [sincronizar.py]"
+    contiene_pii: "no"
+    puede_versionarse: false
+    uso: "ninguno. Es un artefacto de ejecucion versionado contra la regla de [.gitignore:9]. No aporta nada y no deberia estar en el arbol"
+
+  - ruta: .claude/scheduled_tasks.lock
+    sha256: "f7ed70eae85e9ce84dd499e31c7f2e026f1ea06c334867f1a365dd381ac75446"
+    origen: "[INFERIDO] artefacto de una herramienta de asistencia, no del proyecto"
+    contiene_pii: "[VERIFICAR] la evidencia no reporta patrones ni conteos de dato personal en esta ruta"
+    puede_versionarse: false
+    uso: "[PENDIENTE] archivo de bloqueo de tareas programadas. Un .lock es estado de una maquina concreta y no suele tener sentido compartido"
+
+  - ruta: .github/workflows/readme.yml
+    sha256: "56e0392a6f5b503f5283064f4d6d9438ace6d24943f1007b47bca878ac508460"
+    origen: "[INFERIDO] lo instala Sud-Austral/coipo_aireadme; es el mismo archivo en los 57 repositorios del alcance"
+    contiene_pii: "no"
+    puede_versionarse: true
+    uso: "[INFERIDO] llama al generador de README de la organizacion"
+
+# ---------------------------------------------------------------------------
+# HALLAZGO: archivos versionados contra la regla del propio repositorio
+# ---------------------------------------------------------------------------
+#
+# No es una entrada por archivo porque son 178 rutas y el patron es uno solo.
+#
+# 177 archivos bajo .sync_tmp/ estan trackeados en git, pese a que
+# [.gitignore:2] declara esa carpeta ignorada. El comentario de la linea
+# anterior [.gitignore:1] describe exactamente lo que son: "temporales del
+# pipeline de sincronizacion (WAV intermedios, pesan cientos de MB)".
+#
+# Se sumo un compilado, `__pycache__/sincronizar.cpython-313.pyc` (visto en git ls-files; el analizador no indexa esa carpeta), contra
+# [.gitignore:9].
+#
+# Causa: los archivos se versionaron ANTES de que existiera la regla, y
+# .gitignore no des-versiona lo que git ya sigue.
+#
+# Efecto medido, no estimado:
+#   - 111 archivos .wav trackeados pesan 2,7 GB
+#   - de esos, 101 estan dentro de .sync_tmp/
+#   - el arbol de trabajo completo pesa 2,9 GB, o sea que estos archivos son
+#     el 93% del repositorio
+#   - por ese tamano, este repositorio no pudo analizarse por descarga y hubo
+#     que clonarlo aparte
+#
+# El remedio saca los archivos del seguimiento SIN borrarlos del disco y SIN
+# tocar el historial. Lo decide una persona; este documento no lo ejecuta:
+#
+#   git rm -r --cached .sync_tmp
+#   git rm --cached __pycache__/sincronizar.cpython-313.pyc
+#   git commit -m "chore: dejar de versionar temporales ya declarados en .gitignore"
+#
+# Aviso honesto: esto detiene la sangria hacia adelante, pero los objetos
+# siguen en el historial, asi que el clon completo seguira pesando. Purgar el
+# historial es otra decision, mas invasiva, y no se propone aqui.
+
+pendientes:
+  - "Quien es titular de los derechos de las 22 canciones (letra, musica, grabacion) y de las imagenes: Fiscalia"
+  - "Bajo que licencia se publica un repositorio publico que contiene una obra: Fiscalia"
+  - "Quien encargo el cancionero y con que proposito: area que lo impulso"
+  - "Cual de los cuatro archivos de karaoke es el vigente y cuales se pueden retirar: autor del repositorio"
+  - "Que se hace con los 2,7 GB de WAV versionados contra [.gitignore:2]: autor del repositorio"
+  - "Que contiene [INSUMO/ui_ux.md] y si sigue vigente: autor del repositorio"
+  - "Origen de todos los archivos de este manifiesto: no hay ninguna evidencia en el repositorio sobre quien entrego que y cuando"
+
+verificar:
+  - "Titularidad y licencia de la obra publicada en repositorio publico: Fiscalia"
+  - "Condiciones de reutilizacion del material por terceros: Fiscalia"
+
+ciego:
+  - "El contenido de la obra. El PDF, los 22 audios y las 22 imagenes son binarios que el analizador no lee. Lo que el cancionero dice, que es el producto, esta completamente fuera de este manifiesto"
+  - "La logica de los cuatro reproductores HTML: son archivos generados y el analizador no reporta su comportamiento"
+  - "Los archivos cuyo nombre lleva espacios o tildes (audios, imagenes, miniaturas, letras, marcas y el orden del espectaculo) no se pudieron citar con el formato [archivo:linea] de estos documentos"
