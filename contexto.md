@@ -3,6 +3,8 @@
 > Documento generado automáticamente a partir del contenido de la carpeta.
 > Creado 25-07-2026 · Actualizado 25-07-2026 (incorpora la línea de sincronización karaoke).
 > Sirve como punto de partida para futuras sesiones de trabajo.
+>
+> **Nota 2026-11-24:** foto del 25-07-2026. Desde entonces el reproductor publicado es `Cancionero_Karaoke_Pro.html` (generado por `dev/construir_karaoke.py`) con portada `index.html`; `Cancionero_Karaoke.html` quedó como fuente de letras y títulos (array `SONGS`). El estado vigente está en `CLAUDE.md` y `README.md`.
 
 ## 1. Qué es este proyecto
 

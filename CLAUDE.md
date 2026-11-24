@@ -24,7 +24,7 @@ python dev/construir_portada.py      # después del anterior
 python sincronizar.py --carpeta-audio Audios --carpeta-letras Letras   # requiere ffmpeg, demucs, faster-whisper, torch
 python dev/medir_desfase.py ; python dev/corregir_marcas.py --shift <s>
 ```
-No hay pruebas automáticas ni linter. No ejecuté estos comandos al escribir este archivo: no lo comprobé.
+No hay pruebas automáticas ni linter. Verificado el 2026-11-24: `python dev/construir_karaoke.py` y `python dev/construir_portada.py` corren y regeneran `Cancionero_Karaoke_Pro.html` e `index.html` **idénticos** a los versionados (22/22 con karaoke exacto; `git status` limpio después). No comprobado: `generar_miniaturas.py`, `sincronizar.py`, `medir_desfase.py` y `corregir_marcas.py` (dependencias pesadas o modifican marcas).
 
 ## Convenciones y trampas
 - Medios emparejados por nombre normalizado (sin tildes/mayúsculas) entre `Audios`, `Imagenes`, `Marcas` y `Letras`; mantener
@@ -34,6 +34,6 @@ No hay pruebas automáticas ni linter. No ejecuté estos comandos al escribir es
 - `.sync_tmp/` (WAV intermedios, ~2,7 GB) y `__pycache__/` figuran en `.gitignore` pero **están versionados** (VERIFICADO con
   `git ls-files`): no los edites ni agregues más; retirarlos del índice lo decide una persona.
 - `.claude/scheduled_tasks.lock` también está versionado: no lo toques.
-- `.github/workflows/readme.yml` llama al generador `Sud-Austral/coipo_aireadme`; no modificarlo.
+- El antiguo `.github/workflows/readme.yml` (generador `coipo_aireadme`) se eliminó en el commit 617f3de; el repo ya no tiene `.github/` y el README se edita a mano.
 - Marcas `[PENDIENTE]`/`[VERIFICAR]` en `insumos/`: no las resuelvas tú. Autoría/RUN del PDF: pendiente según `contexto.md`.
 - Ante humo o fuego, el número de CONAF que usa la obra es el 130.
